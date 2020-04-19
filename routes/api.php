@@ -16,3 +16,19 @@ use Illuminate\Http\Request;
 Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+Route::post('login', 'UserController@login');
+Route::post('register', 'UserController@register');
+Route::group(['middleware' => 'auth:api'], function()
+{
+   Route::post('details', 'UserController@details');
+   JsonApi::register('default')->routes(function ($api) {
+       $api->resource('projects')->relationships(function ($relations) {
+           $relations->hasMany('forms');
+       });
+       $api->resource('forms')->relationships(function ($relations) {
+           $relations->hasOne('project');
+       });
+   });
+});
+
