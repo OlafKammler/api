@@ -1,6 +1,6 @@
 <?php
 
-namespace App\JsonApi\Forms;
+namespace App\JsonApi\Designs;
 
 use CloudCreativity\LaravelJsonApi\Eloquent\AbstractAdapter;
 use CloudCreativity\LaravelJsonApi\Pagination\StandardStrategy;
@@ -31,7 +31,7 @@ class Adapter extends AbstractAdapter
      */
     public function __construct(StandardStrategy $paging)
     {
-        parent::__construct(new \App\Form(), $paging);
+        parent::__construct(new \App\Design(), $paging);
     }
 
     /**
@@ -48,4 +48,5 @@ class Adapter extends AbstractAdapter
     {
         return $this->belongsTo();
     }
+
 }

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\JsonApi\Forms;
+namespace App\JsonApi\Memberships;
 
 use CloudCreativity\LaravelJsonApi\Eloquent\AbstractAdapter;
 use CloudCreativity\LaravelJsonApi\Pagination\StandardStrategy;
@@ -9,6 +9,7 @@ use Illuminate\Support\Collection;
 
 class Adapter extends AbstractAdapter
 {
+    protected $primaryKey = 'user_id';
 
     /**
      * Mapping of JSON API attribute field names to model keys.
@@ -31,7 +32,7 @@ class Adapter extends AbstractAdapter
      */
     public function __construct(StandardStrategy $paging)
     {
-        parent::__construct(new \App\Form(), $paging);
+        parent::__construct(new \App\ProjectUser(), $paging);
     }
 
     /**
@@ -41,11 +42,6 @@ class Adapter extends AbstractAdapter
      */
     protected function filter($query, Collection $filters)
     {
-        $this->filterWithScopes($query, $filters);
-    }
-
-    protected function project()
-    {
-        return $this->belongsTo();
+        // $this->filterWithScopes($query, $filters);
     }
 }

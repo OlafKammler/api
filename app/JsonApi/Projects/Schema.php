@@ -34,16 +34,41 @@ class Schema extends SchemaProvider
             'description' => $resource->description,
             'created-at' => $resource->created_at->toAtomString(),
             'updated-at' => $resource->updated_at->toAtomString(),
+            'deleted-at' => isset($resource->deleted_at) ? $resource->deleted_at : null,
         ];
     }
 
     public function getRelationships($resource, $isPrimary, array $includeRelationships)
     {
         return [
+            'memberships' => [
+                self::SHOW_SELF => true,
+                self::SHOW_RELATED => true,
+            ],
             'forms' => [
                 self::SHOW_SELF => true,
                 self::SHOW_RELATED => true,
-            ]
+                self::SHOW_DATA => isset($includeRelationships['forms']),
+                self::DATA => function () use ($resource) {
+                    return $resource->forms;
+                }
+            ],
+            'checkpoints' => [
+                self::SHOW_SELF => true,
+                self::SHOW_RELATED => true,
+                self::SHOW_DATA => isset($includeRelationships['checkpoints']),
+                self::DATA => function () use ($resource) {
+                    return $resource->checkpoints;
+                }
+            ],
+            'designs' => [
+                self::SHOW_SELF => true,
+                self::SHOW_RELATED => true,
+            ],
         ];
+    }
+
+    public function getIncludePaths() {
+        return ['checkpoints', 'forms'];
     }
 }

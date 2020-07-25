@@ -12,23 +12,35 @@ use Illuminate\Http\Request;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
+Route::post('/login', 'UserController@login');
+Route::post('/register', 'UserController@register');
 
-Route::middleware('auth:api')->get('/user', function (Request $request) {
-    return $request->user();
-});
-
-Route::post('login', 'UserController@login');
-Route::post('register', 'UserController@register');
 Route::group(['middleware' => 'auth:api'], function()
 {
-   Route::post('details', 'UserController@details');
-   JsonApi::register('default')->routes(function ($api) {
-       $api->resource('projects')->relationships(function ($relations) {
-           $relations->hasMany('forms');
-       });
-       $api->resource('forms')->relationships(function ($relations) {
-           $relations->hasOne('project');
-       });
-   });
+    Route::prefix('api/v1')->get('/user', function (Request $request) {
+        return $request->user();
+    });
+
+    Route::post('/logout', 'UserController@logout');
+
+    JsonApi::register('default')->routes(function ($api) {
+        $api->resource('users');
+
+        $api->resource('projects', [
+            'has-many' => ['memberships', 'forms', 'checkpoints', 'designs'],
+        ]);
+
+        $api->resource('forms')->relationships(function ($relations) {
+            $relations->hasOne('project');
+        });
+
+        $api->resource('checkpoints')->relationships(function ($relations) {
+            $relations->hasOne('project');
+        });
+
+        $api->resource('designs')->relationships(function ($relations) {
+            $relations->hasOne('project');
+        });
+    });
 });
 

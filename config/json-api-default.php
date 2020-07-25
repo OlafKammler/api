@@ -54,8 +54,12 @@ return [
     */
     'resources' => [
         // 'posts' => \App\Post::class,
+        'users' => \App\User::class,
+        'memberships' => \App\ProjectUser::class,
         'projects' => \App\Project::class,
-        'forms' => \App\Form::class
+        'forms' => \App\Form::class,
+        'checkpoints' => \App\Checkpoint::class,
+        'designs' => \App\Design::class,
     ],
 
     /*

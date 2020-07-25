@@ -1,6 +1,6 @@
 <?php
 
-namespace App\JsonApi\Forms;
+namespace App\JsonApi\Users;
 
 use CloudCreativity\LaravelJsonApi\Eloquent\AbstractAdapter;
 use CloudCreativity\LaravelJsonApi\Pagination\StandardStrategy;
@@ -31,7 +31,7 @@ class Adapter extends AbstractAdapter
      */
     public function __construct(StandardStrategy $paging)
     {
-        parent::__construct(new \App\Form(), $paging);
+        parent::__construct(new \App\User(), $paging);
     }
 
     /**
@@ -41,11 +41,15 @@ class Adapter extends AbstractAdapter
      */
     protected function filter($query, Collection $filters)
     {
+        if ($name = $filters->get('name')) {
+            $query->where('name', $name);
+        }
+
+        if ($email = $filters->get('email')) {
+            $query->where('email', $email);
+        }
+
         $this->filterWithScopes($query, $filters);
     }
 
-    protected function project()
-    {
-        return $this->belongsTo();
-    }
 }
