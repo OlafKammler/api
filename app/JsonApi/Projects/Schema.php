@@ -53,6 +53,14 @@ class Schema extends SchemaProvider
                     return $resource->playlists;
                 }
             ],
+            'scenarios' => [
+                self::SHOW_SELF => true,
+                self::SHOW_RELATED => true,
+                self::SHOW_DATA => isset($includeRelationships['scenarios']),
+                self::DATA => function () use ($resource) {
+                    return $resource->scenarios;
+                }
+            ],
             'forms' => [
                 self::SHOW_SELF => true,
                 self::SHOW_RELATED => true,
@@ -76,7 +84,8 @@ class Schema extends SchemaProvider
         ];
     }
 
-    public function getIncludePaths() {
-        return ['playlists', 'checkpoints', 'forms'];
+    public function getIncludePaths()
+    {
+        return ['playlists', 'scenarios', 'checkpoints', 'forms'];
     }
 }

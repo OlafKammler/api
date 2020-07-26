@@ -14,6 +14,7 @@ class Adapter extends AbstractAdapter
 
     protected $includePaths = [
         'playlists',
+        'scenarios',
         'checkpoints',
         'forms'
     ];
@@ -69,6 +70,11 @@ class Adapter extends AbstractAdapter
     }
 
     protected function playlists()
+    {
+        return $this->hasMany();
+    }
+
+    protected function scenarios()
     {
         return $this->hasMany();
     }
