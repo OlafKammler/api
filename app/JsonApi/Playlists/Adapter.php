@@ -48,4 +48,9 @@ class Adapter extends AbstractAdapter
     {
         return $this->belongsTo();
     }
+
+    protected function scenarios()
+    {
+        return $this->hasMany();
+    }
 }

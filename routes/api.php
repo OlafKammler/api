@@ -12,11 +12,11 @@ use Illuminate\Http\Request;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
+
 Route::post('/login', 'UserController@login');
 Route::post('/register', 'UserController@register');
 
-Route::group(['middleware' => 'auth:api'], function()
-{
+Route::group(['middleware' => 'auth:api'], function () {
     Route::prefix('api/v1')->get('/user', function (Request $request) {
         return $request->user();
     });
@@ -33,6 +33,7 @@ Route::group(['middleware' => 'auth:api'], function()
 
         $api->resource('playlists')->relationships(function ($relations) {
             $relations->hasOne('project');
+            $relations->hasMany('scenarios');
         });
 
         $api->resource('scenarios')->relationships(function ($relations) {
@@ -52,4 +53,3 @@ Route::group(['middleware' => 'auth:api'], function()
         });
     });
 });
-

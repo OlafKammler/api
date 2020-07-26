@@ -33,6 +33,7 @@ class Schema extends SchemaProvider
             'name' => $resource->name,
             'description' => $resource->description,
             'data' => $resource->data,
+            'scenario-order' => $resource->orderedScenarioIds(),
             'created-at' => $resource->created_at->toAtomString(),
             'updated-at' => $resource->updated_at->toAtomString(),
         ];
@@ -44,7 +45,20 @@ class Schema extends SchemaProvider
             'project' => [
                 self::SHOW_SELF => true,
                 self::SHOW_RELATED => true,
-            ]
+            ],
+            'scenarios' => [
+                self::SHOW_SELF => true,
+                self::SHOW_RELATED => true,
+                self::SHOW_DATA => isset($includeRelationships['scenarios']),
+                self::DATA => function () use ($resource) {
+                    return $resource->scenarios;
+                }
+            ],
         ];
+    }
+
+    public function getIncludePaths()
+    {
+        return ['scenarios'];
     }
 }

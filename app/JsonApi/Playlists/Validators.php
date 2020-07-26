@@ -1,6 +1,6 @@
 <?php
 
-namespace App\JsonApi\Projects;
+namespace App\JsonApi\Playlists;
 
 use CloudCreativity\LaravelJsonApi\Validation\AbstractValidators;
 
@@ -13,7 +13,7 @@ class Validators extends AbstractValidators
      * @var string[]|null
      *      the allowed paths, an empty array for none allowed, or null to allow all paths.
      */
-    protected $allowedIncludePaths = ['playlists', 'playlists.scenarios', 'scenarios', 'checkpoints', 'forms'];
+    protected $allowedIncludePaths = ['scenarios'];
 
     /**
      * The sort field names a client is allowed send.
