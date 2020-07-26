@@ -56,10 +56,12 @@ return [
         // 'posts' => \App\Post::class,
         'users' => \App\User::class,
         'memberships' => \App\ProjectUser::class,
-        'projects' => \App\Project::class,
+        'playlists' => \App\Playlist::class,
+        'scenarios' => \App\Scenario::class,
         'forms' => \App\Form::class,
         'checkpoints' => \App\Checkpoint::class,
         'designs' => \App\Design::class,
+        'projects' => \App\Project::class,
     ],
 
     /*

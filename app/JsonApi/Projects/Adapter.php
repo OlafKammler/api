@@ -13,7 +13,9 @@ class Adapter extends AbstractAdapter
     use SoftDeletesModels;
 
     protected $includePaths = [
-        'checkpoints', 'forms'
+        'playlists',
+        'checkpoints',
+        'forms'
     ];
 
     /**
@@ -62,6 +64,11 @@ class Adapter extends AbstractAdapter
     }
 
     protected function memberships()
+    {
+        return $this->hasMany();
+    }
+
+    protected function playlists()
     {
         return $this->hasMany();
     }

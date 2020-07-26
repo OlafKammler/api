@@ -1,6 +1,6 @@
 <?php
 
-namespace App\JsonApi\Checkpoints;
+namespace App\JsonApi\Playlists;
 
 use Neomerx\JsonApi\Schema\SchemaProvider;
 
@@ -8,25 +8,25 @@ class Schema extends SchemaProvider
 {
 
     /**
-    * @var string
-    */
-    protected $resourceType = 'checkpoints';
+     * @var string
+     */
+    protected $resourceType = 'playlists';
 
     /**
-    * @param $resource
-    *      the domain record being serialized.
-    * @return string
-    */
+     * @param $resource
+     *      the domain record being serialized.
+     * @return string
+     */
     public function getId($resource)
     {
         return (string) $resource->getRouteKey();
     }
 
     /**
-    * @param $resource
-    *      the domain record being serialized.
-    * @return array
-    */
+     * @param $resource
+     *      the domain record being serialized.
+     * @return array
+     */
     public function getAttributes($resource)
     {
         return [

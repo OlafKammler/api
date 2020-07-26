@@ -1,6 +1,6 @@
 <?php
 
-namespace App\JsonApi\Checkpoints;
+namespace App\JsonApi\Scenarios;
 
 use Neomerx\JsonApi\Schema\SchemaProvider;
 
@@ -8,31 +8,28 @@ class Schema extends SchemaProvider
 {
 
     /**
-    * @var string
-    */
-    protected $resourceType = 'checkpoints';
+     * @var string
+     */
+    protected $resourceType = 'scenarios';
 
     /**
-    * @param $resource
-    *      the domain record being serialized.
-    * @return string
-    */
+     * @param $resource
+     *      the domain record being serialized.
+     * @return string
+     */
     public function getId($resource)
     {
         return (string) $resource->getRouteKey();
     }
 
     /**
-    * @param $resource
-    *      the domain record being serialized.
-    * @return array
-    */
+     * @param $resource
+     *      the domain record being serialized.
+     * @return array
+     */
     public function getAttributes($resource)
     {
         return [
-            'name' => $resource->name,
-            'description' => $resource->description,
-            'data' => $resource->data,
             'created-at' => $resource->created_at->toAtomString(),
             'updated-at' => $resource->updated_at->toAtomString(),
         ];
@@ -43,7 +40,7 @@ class Schema extends SchemaProvider
         return [
             'project' => [
                 self::SHOW_SELF => true,
-                self::SHOW_RELATED => true,
+                self::SHOW_RELATED => true
             ]
         ];
     }

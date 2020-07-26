@@ -22,6 +22,14 @@ class Project extends Model
         return $this->hasMany(Form::class);
     }
 
+    public function playlists() {
+        return $this->hasMany(Playlist::class);
+    }
+
+    public function scenarios() {
+        return $this->hasMany(Scenario::class);
+    }
+
     public function checkpoints() {
         return $this->hasMany(Checkpoint::class);
     }

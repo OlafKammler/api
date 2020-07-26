@@ -27,8 +27,17 @@ Route::group(['middleware' => 'auth:api'], function()
         $api->resource('users');
 
         $api->resource('projects', [
-            'has-many' => ['memberships', 'forms', 'checkpoints', 'designs'],
+            'has-many' => ['memberships', 'playlists', 'scenarios', 'forms', 'checkpoints', 'designs'],
         ]);
+
+
+        $api->resource('playlists')->relationships(function ($relations) {
+            $relations->hasOne('project');
+        });
+
+        $api->resource('scenarios')->relationships(function ($relations) {
+            $relations->hasOne('project');
+        });
 
         $api->resource('forms')->relationships(function ($relations) {
             $relations->hasOne('project');
