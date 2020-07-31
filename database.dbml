@@ -1,0 +1,190 @@
+Project VrevalDB {
+  database_type: 'MySql'
+}
+
+Table users {
+  id integer [pk, increment]
+  name varchar
+  email varchar
+}
+
+Table user_project {
+  user_id integer
+  project_id integer
+  permission varchar
+}
+Ref: user_project.user_id > users.id
+Ref: user_project.project_id > projects.id
+
+Table projects {
+  id integer [pk, increment]
+  name varchar
+  desription varchar
+}
+
+Table playlists {
+  id integer [pk, increment]
+  project_id integer
+  name varchar
+  description varchar
+}
+Ref: playlists.project_id > projects.id
+
+Table playlist_scenarios {
+  project_id integer
+  playlist_id integer
+  scenario_id integer
+  position integer
+
+  Indexes {
+    (project_id, playlist_id, scenario_id) [pk]
+  }
+
+  Note: 'This is a many-to-many relation that also stores the order in which a scenario should be activated by assigning each row a position in an ordered list.'
+}
+Ref: playlist_scenarios.project_id > projects.id
+Ref: playlist_scenarios.playlist_id > playlists.id
+Ref: playlist_scenarios.scenario_id > scenarios.id
+
+Table scenarios {
+  id integer [pk, increment]
+  project_id integer
+  name varchar
+  description varchar
+}
+Ref: scenarios.project_id > projects.id
+
+Table scenarios_checkpoints {
+  project_id integer
+  scenario_id integer
+  checkpoint_id integer
+  position integer
+
+  Indexes {
+      (project_id, scenario_id, checkpoint_id) [pk]
+  }
+
+  Note: 'This is a many-to-many relation that also stores the order in which a checkpoint should be activated by assigning each row a position in an ordered list.'
+}
+Ref: scenarios_checkpoints.project_id > projects.id
+Ref: scenarios_checkpoints.scenario_id > scenarios.id
+Ref: scenarios_checkpoints.checkpoint_id > checkpoints.id
+
+Table checkpoints {
+  id integer [pk, increment]
+  project_id integer
+  name varchar
+  description varchar
+}
+Ref: checkpoints.project_id > projects.id
+
+Table checkpoints_forms {
+  project_id integer
+  checkpoint_id integer
+  form_id integer
+  position integer
+
+  Indexes {
+    (project_id, checkpoint_id, form_id) [pk]
+  }
+}
+Ref: checkpoints_forms.project_id > projects.id
+Ref: checkpoints_forms.checkpoint_id > checkpoints.id
+Ref: checkpoints_forms.form_id > forms.id
+
+Table designs {
+  id integer [pk, increment]
+  project_id integer
+  url varchar [note: 'Download link for the actual geometry file. For our purposes this file will be uploaded as unity asset bundle.']
+  type_id integer
+  description varchar
+}
+Ref: designs.project_id > projects.id
+Ref: designs.type_id > design_types.id
+
+Table design_types {
+  id integer [pk, increment]
+  name varchar
+  description varchar
+}
+
+Table forms {
+  id integer [pk, increment]
+  project_id integer
+  name varchar
+  description varchar
+}
+Ref: forms.project_id > projects.id
+
+Table form_fields {
+  id integer [pk, increment]
+  form_id integer
+  type_id integer
+  behaviour_id integer
+}
+Ref: form_fields.form_id > forms.id
+Ref: form_fields.type_id > form_field_types.id
+Ref: form_fields.behaviour_id > behaviours.id
+
+Table form_field_types {
+  id integer [pk, increment]
+  name varchar
+  description varchar
+}
+
+Table behaviours {
+  id integer [pk, increment]
+  name varchar
+  description varchar
+}
+
+Table results {
+  id integer [pk, increment]
+  form_id integer
+  form_field_id integer
+  participant_id integer
+  data varchar
+  last_edited timestamp
+}
+Ref: results.form_id > forms.id
+Ref: results.form_field_id > form_fields.id
+Ref: results.participant_id > participants.id
+
+Table sessions {
+  id integer [pk, increment]
+  name varchar
+  description varchar
+  project_id integer
+  playlist_id integer
+}
+Ref: sessions.project_id > projects.id
+Ref: sessions.playlist_id > playlists.id
+
+Table session_logs {
+  id integer [pk, increment]
+  participant_id integer
+  session_id integer
+  created_at timestamp
+  content varchar
+  category_id integer
+
+  Note: 'All relevant events will have their own log entry'
+}
+Ref: session_logs.participant_id > participants.id
+Ref: session_logs.session_id > sessions.id
+Ref: session_logs.category_id > log_categories.id
+
+Table log_categories {
+  id integer [pk, increment]
+  name varchar
+  description varchar
+
+  Note: 'Examples: Progress, Exception, Breaks, Aborts etc.'
+}
+
+Table participants {
+  id integer [pk, increment]
+  code varchar
+  session_id integer
+}
+Ref: participants.session_id > sessions.id
