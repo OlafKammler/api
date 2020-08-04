@@ -1,6 +1,6 @@
 <?php
 
-namespace App\JsonApi\Designs;
+namespace App\JsonApi\ContextModels;
 
 use Neomerx\JsonApi\Schema\SchemaProvider;
 
@@ -10,7 +10,7 @@ class Schema extends SchemaProvider
     /**
      * @var string
      */
-    protected $resourceType = 'designs';
+    protected $resourceType = 'context-models';
 
     /**
      * @param $resource
@@ -32,19 +32,8 @@ class Schema extends SchemaProvider
         return [
             'name' => $resource->name,
             'description' => $resource->description,
-            'data' => $resource->data,
             'created-at' => $resource->created_at->toAtomString(),
             'updated-at' => $resource->updated_at->toAtomString(),
-        ];
-    }
-
-    public function getRelationships($resource, $isPrimary, array $includeRelationships)
-    {
-        return [
-            'projects' => [
-                self::SHOW_SELF => true,
-                self::SHOW_RELATED => true,
-            ]
         ];
     }
 }

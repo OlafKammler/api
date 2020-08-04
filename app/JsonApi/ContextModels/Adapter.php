@@ -1,6 +1,6 @@
 <?php
 
-namespace App\JsonApi\Designs;
+namespace App\JsonApi\ContextModels;
 
 use CloudCreativity\LaravelJsonApi\Eloquent\AbstractAdapter;
 use CloudCreativity\LaravelJsonApi\Pagination\StandardStrategy;
@@ -31,7 +31,7 @@ class Adapter extends AbstractAdapter
      */
     public function __construct(StandardStrategy $paging)
     {
-        parent::__construct(new \App\Design(), $paging);
+        parent::__construct(new \App\ContextModel(), $paging);
     }
 
     /**
@@ -42,11 +42,6 @@ class Adapter extends AbstractAdapter
     protected function filter($query, Collection $filters)
     {
         $this->filterWithScopes($query, $filters);
-    }
-
-    protected function project()
-    {
-        return $this->belongsTo();
     }
 
 }

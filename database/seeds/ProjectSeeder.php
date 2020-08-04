@@ -27,8 +27,8 @@ class ProjectSeeder extends Seeder
             factory(App\Checkpoint::class, 5)->create()->each(function ($checkpoint) use ($project) {
                 $project->checkpoints()->save($checkpoint);
             });
-            factory(App\Design::class, 5)->create()->each(function ($design) use ($project) {
-                $project->designs()->save($design);
+            factory(App\ContextModel::class, 5)->create()->each(function ($contextModel) use ($project) {
+                $project->contextModels()->save($contextModel);
             });
         });
     }

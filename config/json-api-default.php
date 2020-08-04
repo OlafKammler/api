@@ -60,8 +60,8 @@ return [
         'scenarios' => \App\Scenario::class,
         'forms' => \App\Form::class,
         'checkpoints' => \App\Checkpoint::class,
-        'designs' => \App\Design::class,
         'projects' => \App\Project::class,
+        'contextModels' => \App\ContextModel::class
     ],
 
     /*

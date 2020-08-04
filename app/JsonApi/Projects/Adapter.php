@@ -16,7 +16,8 @@ class Adapter extends AbstractAdapter
         'playlists',
         'scenarios',
         'checkpoints',
-        'forms'
+        'forms',
+        'contextModels'
     ];
 
     /**
@@ -89,7 +90,7 @@ class Adapter extends AbstractAdapter
         return $this->hasMany();
     }
 
-    protected function designs()
+    protected function contextModels()
     {
         return $this->hasMany();
     }

@@ -61,14 +61,6 @@ class Schema extends SchemaProvider
                     return $resource->scenarios;
                 }
             ],
-            'forms' => [
-                self::SHOW_SELF => true,
-                self::SHOW_RELATED => true,
-                self::SHOW_DATA => isset($includeRelationships['forms']),
-                self::DATA => function () use ($resource) {
-                    return $resource->forms;
-                }
-            ],
             'checkpoints' => [
                 self::SHOW_SELF => true,
                 self::SHOW_RELATED => true,
@@ -77,15 +69,27 @@ class Schema extends SchemaProvider
                     return $resource->checkpoints;
                 }
             ],
-            'designs' => [
+            'forms' => [
                 self::SHOW_SELF => true,
                 self::SHOW_RELATED => true,
+                self::SHOW_DATA => isset($includeRelationships['forms']),
+                self::DATA => function () use ($resource) {
+                    return $resource->forms;
+                }
             ],
+            'contextModels' => [
+                self::SHOW_SELF => true,
+                self::SHOW_RELATED => true,
+                self::SHOW_DATA => isset($includeRelationships['contextModels']),
+                self::DATA => function () use ($resource) {
+                    return $resource->contextModels;
+                }
+            ]
         ];
     }
 
     public function getIncludePaths()
     {
-        return ['playlists', 'scenarios', 'checkpoints', 'forms'];
+        return ['playlists', 'scenarios', 'checkpoints', 'forms', 'contextModels'];
     }
 }
