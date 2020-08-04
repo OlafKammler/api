@@ -2,10 +2,12 @@
 
 namespace App\JsonApi\Playlists;
 
+use App\Playlist;
 use CloudCreativity\LaravelJsonApi\Eloquent\AbstractAdapter;
 use CloudCreativity\LaravelJsonApi\Pagination\StandardStrategy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\App;
 
 class Adapter extends AbstractAdapter
 {
@@ -42,6 +44,12 @@ class Adapter extends AbstractAdapter
     protected function filter($query, Collection $filters)
     {
         $this->filterWithScopes($query, $filters);
+    }
+
+    protected function updating(Playlist $playlist, $resource)
+    {
+        if (!isset($resource['scenarioIds'])) return;
+        $playlist->updateScenarios($resource['scenarioIds']);
     }
 
     protected function project()

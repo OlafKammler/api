@@ -25,6 +25,20 @@ class Playlist extends Model
             ]);
     }
 
+    public function updateScenarios(array $scenarioIds)
+    {
+        $data = [];
+        for ($i = 0; $i < count($scenarioIds); $i++) {
+            $data[$scenarioIds[$i]] = [
+                'playlist_id' => $this->id,
+                'project_id' => $this->project->id,
+                'list_position' => $i
+            ];
+        }
+        // dd($data);
+        $this->scenarios()->sync($data);
+    }
+
     public function orderedScenarioIds()
     {
         $pivot = [];
