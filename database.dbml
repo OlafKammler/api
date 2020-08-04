@@ -49,10 +49,16 @@ Ref: playlist_scenarios.scenario_id > scenarios.id
 Table scenarios {
   id integer [pk, increment]
   project_id integer
+  context_model_id integer
+  architecture_model_id integer
+  scenery_model_id integer
   name varchar
   description varchar
 }
 Ref: scenarios.project_id > projects.id
+Ref: scenarios.context_model_id > context_models.id
+Ref: scenarios.architecture_model_id > architecture_models.id
+Ref: scenarios.scenery_model_id > scenery_models.id
 
 Table scenarios_checkpoints {
   project_id integer
@@ -92,21 +98,29 @@ Ref: checkpoints_forms.project_id > projects.id
 Ref: checkpoints_forms.checkpoint_id > checkpoints.id
 Ref: checkpoints_forms.form_id > forms.id
 
-Table designs {
+Table context_models {
   id integer [pk, increment]
   project_id integer
   url varchar [note: 'Download link for the actual geometry file. For our purposes this file will be uploaded as unity asset bundle.']
-  type_id integer
   description varchar
 }
-Ref: designs.project_id > projects.id
-Ref: designs.type_id > design_types.id
+Ref: context_models.project_id > projects.id
 
-Table design_types {
+Table architecture_models {
   id integer [pk, increment]
-  name varchar
+  project_id integer
+  url varchar [note: 'Download link for the actual geometry file. For our purposes this file will be uploaded as unity asset bundle.']
   description varchar
 }
+Ref: architecture_models.project_id > projects.id
+
+Table scenery_models {
+  id integer [pk, increment]
+  project_id integer
+  url varchar [note: 'Download link for the actual geometry file. For our purposes this file will be uploaded as unity asset bundle.']
+  description varchar
+}
+Ref: scenery_models.project_id > projects.id
 
 Table forms {
   id integer [pk, increment]
