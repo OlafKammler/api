@@ -102,6 +102,7 @@ Table context_models {
   id integer [pk, increment]
   project_id integer
   url varchar [note: 'Download link for the actual geometry file. For our purposes this file will be uploaded as unity asset bundle.']
+  name varchar
   description varchar
 }
 Ref: context_models.project_id > projects.id
@@ -110,6 +111,7 @@ Table architecture_models {
   id integer [pk, increment]
   project_id integer
   url varchar [note: 'Download link for the actual geometry file. For our purposes this file will be uploaded as unity asset bundle.']
+  name varchar
   description varchar
 }
 Ref: architecture_models.project_id > projects.id
@@ -118,13 +120,27 @@ Table scenery_models {
   id integer [pk, increment]
   project_id integer
   url varchar [note: 'Download link for the actual geometry file. For our purposes this file will be uploaded as unity asset bundle.']
+  name varchar
   description varchar
 }
 Ref: scenery_models.project_id > projects.id
 
+Table question_forms {
+  id integer [pk, increment]
+  form_id integer
+}
+Ref: question_forms.form_id > forms.id
+
+Table activity_forms {
+  id integer [pk, increment]
+  form_id integer
+}
+Ref: activity_forms.form_id > forms.id
+
 Table forms {
   id integer [pk, increment]
   project_id integer
+  type enum
   name varchar
   description varchar
 }
@@ -134,23 +150,28 @@ Table form_fields {
   id integer [pk, increment]
   form_id integer
   type_id integer
-  behaviour_id integer
 }
 Ref: form_fields.form_id > forms.id
-Ref: form_fields.type_id > form_field_types.id
-Ref: form_fields.behaviour_id > behaviours.id
+Ref: form_fields.type_id > activity_form_field_types.id
+Ref: form_fields.type_id > question_form_field_types.id
 
-Table form_field_types {
+Table activity_form_field_types {
   id integer [pk, increment]
   name varchar
   description varchar
+  activity_form_id integer
+  behaviour varchar
 }
+Ref: activity_form_field_types.activity_form_id - activity_forms.id
 
-Table behaviours {
+Table question_form_field_types {
   id integer [pk, increment]
   name varchar
   description varchar
+  question_form_id integer
+  behaviour varchar
 }
+Ref: question_form_field_types.question_form_id - question_forms.id
 
 Table results {
   id integer [pk, increment]
