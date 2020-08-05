@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateFormsTable extends Migration
+class CreateProjectComponentTables extends Migration
 {
     /**
      * Run the migrations.
@@ -28,12 +28,12 @@ class CreateFormsTable extends Migration
             $this->createBasicFields($table);
             $table->enum('type', ['activity', 'question']);
         });
-        Schema::create('activity_forms', function (Blueprint $table) {
+        Schema::create('form_activities', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('form_id')->nullable();
             $table->foreign('form_id')->references('id')->on('forms')->onDelete('cascade');
         });
-        Schema::create('question_forms', function (Blueprint $table) {
+        Schema::create('form_questions', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('form_id')->nullable();
             $table->foreign('form_id')->references('id')->on('forms')->onDelete('cascade');
