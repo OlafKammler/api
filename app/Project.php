@@ -11,7 +11,7 @@ class Project extends Model
 
     protected $fillable = ['name', 'description'];
 
-    public function users()
+    public function memberships()
     {
         return $this->belongsToMany(User::class)
             ->as('membership')

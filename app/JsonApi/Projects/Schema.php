@@ -44,6 +44,10 @@ class Schema extends SchemaProvider
             'memberships' => [
                 self::SHOW_SELF => true,
                 self::SHOW_RELATED => true,
+                self::SHOW_DATA => isset($includeRelationships['memberships']),
+                self::DATA => function () use ($resource) {
+                    return $resource->memberships;
+                }
             ],
             'playlists' => [
                 self::SHOW_SELF => true,
@@ -90,6 +94,6 @@ class Schema extends SchemaProvider
 
     public function getIncludePaths()
     {
-        return ['playlists', 'scenarios', 'checkpoints', 'forms', 'contextModels'];
+        return ['memberships', 'playlists', 'scenarios', 'checkpoints', 'forms', 'contextModels'];
     }
 }
