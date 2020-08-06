@@ -24,13 +24,13 @@ class CreateContextModelsTable extends Migration
      */
     public function up()
     {
-        Schema::create('models_context', function (Blueprint $table) {
+        Schema::create('model_contexts', function (Blueprint $table) {
             $this->createModelFields($table);
         });
-        Schema::create('models_architecture', function (Blueprint $table) {
+        Schema::create('model_architectures', function (Blueprint $table) {
             $this->createModelFields($table);
         });
-        Schema::create('models_scenery', function (Blueprint $table) {
+        Schema::create('model_sceneries', function (Blueprint $table) {
             $this->createModelFields($table);
         });
     }
@@ -42,8 +42,8 @@ class CreateContextModelsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('models_context');
-        Schema::dropIfExists('models_architecture');
-        Schema::dropIfExists('models_scenery');
+        Schema::dropIfExists('model_contexts');
+        Schema::dropIfExists('model_architectures');
+        Schema::dropIfExists('model_sceneries');
     }
 }

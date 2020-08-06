@@ -22,21 +22,10 @@ class CreateProjectComponentTables extends Migration
         });
         Schema::create('checkpoints', function (Blueprint $table) {
             $this->createBasicFields($table);
-            $this->createModelRelationships($table);
         });
         Schema::create('forms', function (Blueprint $table) {
             $this->createBasicFields($table);
             $table->enum('type', ['activity', 'question']);
-        });
-        Schema::create('form_activities', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->unsignedBigInteger('form_id')->nullable();
-            $table->foreign('form_id')->references('id')->on('forms')->onDelete('cascade');
-        });
-        Schema::create('form_questions', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->unsignedBigInteger('form_id')->nullable();
-            $table->foreign('form_id')->references('id')->on('forms')->onDelete('cascade');
         });
         Schema::create('playlist_scenario', function (Blueprint $table) {
             $this->createComponentPivot($table, 'playlist', 'scenario');
@@ -83,9 +72,9 @@ class CreateProjectComponentTables extends Migration
         $table->unsignedBigInteger('architecture_model_id')->nullable();
         $table->unsignedBigInteger('scenery_model_id')->nullable();
 
-        $table->foreign('context_model_id')->references('id')->on('models_context')->onDelete('cascade');
-        $table->foreign('architecture_model_id')->references('id')->on('models_architecture')->onDelete('cascade');
-        $table->foreign('scenery_model_id')->references('id')->on('models_scenery')->onDelete('cascade');
+        $table->foreign('context_model_id')->references('id')->on('model_contexts')->onDelete('cascade');
+        $table->foreign('architecture_model_id')->references('id')->on('model_architectures')->onDelete('cascade');
+        $table->foreign('scenery_model_id')->references('id')->on('model_sceneries')->onDelete('cascade');
     }
 
     private function createComponentPivot($table, $componentA, $componentB)
