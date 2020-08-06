@@ -13,7 +13,7 @@ class ProjectSeeder extends Seeder
     {
         factory(App\Project::class, 5)->create()->each(function ($project) {
             $user = factory(App\User::class)->create();
-            $project->users()->attach($user->id, ['role' => 'Owner']);
+            $project->memberships()->attach($user->id, ['role' => 'Owner']);
 
             factory(App\Playlist::class, 5)->create()->each(function ($playlist) use ($project) {
                 $project->playlists()->save($playlist);
@@ -27,8 +27,14 @@ class ProjectSeeder extends Seeder
             factory(App\Checkpoint::class, 5)->create()->each(function ($checkpoint) use ($project) {
                 $project->checkpoints()->save($checkpoint);
             });
-            factory(App\ContextModel::class, 5)->create()->each(function ($contextModel) use ($project) {
-                $project->contextModels()->save($contextModel);
+            factory(App\ModelContext::class, 5)->create()->each(function ($contextModel) use ($project) {
+                $project->modelContexts()->save($contextModel);
+            });
+            factory(App\ModelArchitecture::class, 5)->create()->each(function ($contextModel) use ($project) {
+                $project->modelArchitectures()->save($contextModel);
+            });
+            factory(App\ModelScenery::class, 5)->create()->each(function ($contextModel) use ($project) {
+                $project->modelSceneries()->save($contextModel);
             });
         });
     }
