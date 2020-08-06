@@ -82,7 +82,7 @@ class CreateProjectComponentTables extends Migration
         $table->unsignedBigInteger("{$componentA}_id");
         $table->unsignedBigInteger("{$componentB}_id");
         $table->unsignedBigInteger('project_id');
-        $table->unsignedBigInteger('list_position');
+        $table->unsignedTinyInteger('list_position');
         $table->primary(['project_id', "{$componentA}_id", "{$componentB}_id"]);
 
         $table->foreign("{$componentA}_id")->references('id')->on("{$componentA}s");

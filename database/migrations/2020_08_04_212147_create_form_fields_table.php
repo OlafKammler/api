@@ -16,6 +16,7 @@ class CreateFormFieldsTable extends Migration
         Schema::create('form_fields', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->unsignedBigInteger('form_id')->nullable();
+            $table->unsignedTinyInteger('list_position');
             $table->jsonb('template')->nullable();
             $table->timestamps();
 
