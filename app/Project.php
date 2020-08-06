@@ -39,8 +39,16 @@ class Project extends Model
         return $this->hasMany(Checkpoint::class);
     }
 
-    public function contextModels()
+    public function modelContexts()
     {
-        return $this->hasMany(ContextModel::class);
+        return $this->hasMany(ModelContext::class);
+    }
+    public function modelArchitectures()
+    {
+        return $this->hasMany(ModelArchitecture::class);
+    }
+    public function modelSceneries()
+    {
+        return $this->hasMany(ModelScenery::class);
     }
 }
