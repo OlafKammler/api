@@ -125,18 +125,6 @@ Table scenery_models {
 }
 Ref: scenery_models.project_id > projects.id
 
-Table question_forms {
-  id integer [pk, increment]
-  form_id integer
-}
-Ref: question_forms.form_id > forms.id
-
-Table activity_forms {
-  id integer [pk, increment]
-  form_id integer
-}
-Ref: activity_forms.form_id > forms.id
-
 Table forms {
   id integer [pk, increment]
   project_id integer
@@ -148,30 +136,24 @@ Ref: forms.project_id > projects.id
 
 Table form_fields {
   id integer [pk, increment]
+  template varchar
   form_id integer
-  type_id integer
 }
 Ref: form_fields.form_id > forms.id
-Ref: form_fields.type_id > activity_form_field_types.id
-Ref: form_fields.type_id > question_form_field_types.id
 
 Table activity_form_field_types {
   id integer [pk, increment]
   name varchar
   description varchar
-  activity_form_id integer
   behaviour varchar
 }
-Ref: activity_form_field_types.activity_form_id - activity_forms.id
 
 Table question_form_field_types {
   id integer [pk, increment]
   name varchar
   description varchar
-  question_form_id integer
   behaviour varchar
 }
-Ref: question_form_field_types.question_form_id - question_forms.id
 
 Table results {
   id integer [pk, increment]
