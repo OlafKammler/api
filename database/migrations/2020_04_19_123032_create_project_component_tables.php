@@ -68,13 +68,13 @@ class CreateProjectComponentTables extends Migration
 
     private function createModelRelationships($table)
     {
-        $table->unsignedBigInteger('context_model_id')->nullable();
-        $table->unsignedBigInteger('architecture_model_id')->nullable();
-        $table->unsignedBigInteger('scenery_model_id')->nullable();
+        $table->unsignedBigInteger('model_context_id')->nullable();
+        $table->unsignedBigInteger('model_architecture_id')->nullable();
+        $table->unsignedBigInteger('model_scenery_id')->nullable();
 
-        $table->foreign('context_model_id')->references('id')->on('model_contexts')->onDelete('cascade');
-        $table->foreign('architecture_model_id')->references('id')->on('model_architectures')->onDelete('cascade');
-        $table->foreign('scenery_model_id')->references('id')->on('model_sceneries')->onDelete('cascade');
+        $table->foreign('model_context_id')->references('id')->on('model_contexts')->onDelete('cascade');
+        $table->foreign('model_architecture_id')->references('id')->on('model_architectures')->onDelete('cascade');
+        $table->foreign('model_scenery_id')->references('id')->on('model_sceneries')->onDelete('cascade');
     }
 
     private function createComponentPivot($table, $componentA, $componentB)
