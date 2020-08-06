@@ -19,7 +19,7 @@ Ref: user_project.project_id > projects.id
 Table projects {
   id integer [pk, increment]
   name varchar
-  desription varchar
+  description varchar
 }
 
 Table playlists {
@@ -136,31 +136,18 @@ Ref: forms.project_id > projects.id
 
 Table form_fields {
   id integer [pk, increment]
-  template varchar
+  position integer
+  template jsonb
   form_id integer
 }
 Ref: form_fields.form_id > forms.id
-
-Table activity_form_field_types {
-  id integer [pk, increment]
-  name varchar
-  description varchar
-  behaviour varchar
-}
-
-Table question_form_field_types {
-  id integer [pk, increment]
-  name varchar
-  description varchar
-  behaviour varchar
-}
 
 Table results {
   id integer [pk, increment]
   form_id integer
   form_field_id integer
   participant_id integer
-  data varchar
+  data jsonb
   last_edited timestamp
 }
 Ref: results.form_id > forms.id
