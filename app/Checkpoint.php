@@ -2,13 +2,11 @@
 
 namespace App;
 
-use Illuminate\Database\Eloquent\Model;
+use App\ProjectComponent;
 
-class Checkpoint extends Model
+class Checkpoint extends ProjectComponent
 {
-    protected $fillable = ['project_id', 'name', 'description', 'data'];
-
-    public function project() {
-        return $this->belongsTo(Project::class);
-    }
+    protected $childCollectionType = Form::class;
+    protected $identificatedName = 'checkpoint_id';
+    protected $identificatedItemName = 'form_id';
 }
