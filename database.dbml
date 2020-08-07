@@ -9,12 +9,18 @@ Table users {
 }
 
 Table user_project {
-  user_id integer
+  user_id integer 
   project_id integer
-  permission varchar
+  permission_id varchar
+}
+
+Table permissions {
+  id integer [pk, increment]
+  
 }
 Ref: user_project.user_id > users.id
 Ref: user_project.project_id > projects.id
+Ref: user_project.permission_id > permissions.id
 
 Table projects {
   id integer [pk, increment]
@@ -89,7 +95,7 @@ Table checkpoints_forms {
   checkpoint_id integer
   form_id integer
   position integer
-
+  
   Indexes {
     (project_id, checkpoint_id, form_id) [pk]
   }
@@ -97,6 +103,21 @@ Table checkpoints_forms {
 Ref: checkpoints_forms.project_id > projects.id
 Ref: checkpoints_forms.checkpoint_id > checkpoints.id
 Ref: checkpoints_forms.form_id > forms.id
+
+Table models {
+ id integer [pk, increment]
+  project_id integer
+  type model_type
+  url varchar [note: 'Download link for the actual geometry file. For our purposes this file will be uploaded as unity asset bundle.']
+  name varchar
+  description varcha
+}
+
+enum model_type{
+  context //Main Model 
+  architecture //Submodel
+  scenery //Part Submodel
+}
 
 Table context_models {
   id integer [pk, increment]
@@ -128,11 +149,16 @@ Ref: scenery_models.project_id > projects.id
 Table forms {
   id integer [pk, increment]
   project_id integer
-  type enum
+  type form_type
   name varchar
   description varchar
 }
 Ref: forms.project_id > projects.id
+
+enum form_type {
+  activity
+  question
+}
 
 Table form_fields {
   id integer [pk, increment]
@@ -171,7 +197,7 @@ Table session_logs {
   created_at timestamp
   content varchar
   category_id integer
-
+  
   Note: 'All relevant events will have their own log entry'
 }
 Ref: session_logs.participant_id > participants.id
@@ -182,7 +208,7 @@ Table log_categories {
   id integer [pk, increment]
   name varchar
   description varchar
-
+  
   Note: 'Examples: Progress, Exception, Breaks, Aborts etc.'
 }
 
@@ -192,3 +218,6 @@ Table participants {
   session_id integer
 }
 Ref: participants.session_id > sessions.id
+
+
+Ref: "architecture_models"."name" < "models"."url"
