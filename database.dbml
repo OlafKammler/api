@@ -2,36 +2,74 @@ Project VrevalDB {
   database_type: 'MySql'
 }
 
+//User auf der Plattform
 Table users {
   id integer [pk, increment]
-  name varchar
-  email varchar
+  name varchar [not null]
+  username varchar [not null, unique]
+  email varchar [not null, unique]
+  created_at timestamp
+  user_activity_last timestamp
 }
 
+//Pivot: Zuordnung Projekte zu User mit Projekt Permission
 Table user_project {
   user_id integer 
   project_id integer
   permission_id varchar
 }
 
-Table permissions {
+//Project Bearbeitung
+Table permissions_project {
   id integer [pk, increment]
+  name varchar
+
+  Note: 'Permissions:
+Erstellen/Ändern/Löschen:
+Project, Modelle, Checkpoints, Overview, Forms, Scenario, Playlist, Sessions, Evaluation, ParticipantInvitation, Results 
+Upload/Download:
+Modelle, Checkpoints, Results'
+}
+
+//Alle Projekte auf der Plattform
+Table projects {
+  id integer [pk, increment]
+  name varchar [not null]
+  description varchar
+  model_total double [Note: 'SUM']
+  checkpoint_evaluation_total integer
+  checkpoint_information_total integer [Note: 'Information-Checkpoints']
+  participant_total integer
+  membership_id integer
+  created_at timestamp
+  project_activity_last timestamp
+}
+
+//Permission für Global Projektbearbeitung
+Table permission_membership {
   
+  id integer [pk, increment]
+  name varchar [note: 'Student, Trial, Personal, Plus, Pro, Enterprise']
+  modelsize_max double
+  checkpoint_evaluation_max integer
+  checkpoint_information_max integer
+  patricipant_max integer
+
+  Note: 'Grundgedanke: Zusatzfunktionen/ Zusatzspeicher können für ein Projekt dazu bestellt werden kann. Dadurch ist der User unabhängig vom Projekt.'
 }
 Ref: user_project.user_id > users.id
 Ref: user_project.project_id > projects.id
-Ref: user_project.permission_id > permissions.id
+Ref: user_project.permission_id > permissions_project.id
+Ref: projects.membership_id > permission_membership.id
 
-Table projects {
-  id integer [pk, increment]
-  name varchar
-  description varchar
-}
+
+
+//HIERARCHIE: Survey Layout (Scenario, Playlist, Session, Evaluation)
 
 Table playlists {
   id integer [pk, increment]
   project_id integer
-  name varchar
+  name varchar [not null]
   description varchar
 }
 Ref: playlists.project_id > projects.id
@@ -52,19 +90,18 @@ Ref: playlist_scenarios.project_id > projects.id
 Ref: playlist_scenarios.playlist_id > playlists.id
 Ref: playlist_scenarios.scenario_id > scenarios.id
 
+
 Table scenarios {
   id integer [pk, increment]
-  project_id integer
-  context_model_id integer
-  architecture_model_id integer
-  scenery_model_id integer
-  name varchar
+  name varchar [not null]
   description varchar
+  project_id integer
+  model_id integer
+  behaviour_id integer
 }
 Ref: scenarios.project_id > projects.id
-Ref: scenarios.context_model_id > context_models.id
-Ref: scenarios.architecture_model_id > architecture_models.id
-Ref: scenarios.scenery_model_id > scenery_models.id
+Ref: scenarios.model_id > models.id
+Ref: scenarios.behaviour_id > behaviour.id
 
 Table scenarios_checkpoints {
   project_id integer
@@ -82,19 +119,11 @@ Ref: scenarios_checkpoints.project_id > projects.id
 Ref: scenarios_checkpoints.scenario_id > scenarios.id
 Ref: scenarios_checkpoints.checkpoint_id > checkpoints.id
 
-Table checkpoints {
-  id integer [pk, increment]
-  project_id integer
-  name varchar
-  description varchar
-}
-Ref: checkpoints.project_id > projects.id
-
 Table checkpoints_forms {
   project_id integer
   checkpoint_id integer
   form_id integer
-  position integer
+  position integer [Note: 'Reihenfolge']
   
   Indexes {
     (project_id, checkpoint_id, form_id) [pk]
@@ -104,85 +133,9 @@ Ref: checkpoints_forms.project_id > projects.id
 Ref: checkpoints_forms.checkpoint_id > checkpoints.id
 Ref: checkpoints_forms.form_id > forms.id
 
-Table models {
- id integer [pk, increment]
-  project_id integer
-  type model_type
-  url varchar [note: 'Download link for the actual geometry file. For our purposes this file will be uploaded as unity asset bundle.']
-  name varchar
-  description varcha
-}
-
-enum model_type{
-  context //Main Model 
-  architecture //Submodel
-  scenery //Part Submodel
-}
-
-Table context_models {
-  id integer [pk, increment]
-  project_id integer
-  url varchar [note: 'Download link for the actual geometry file. For our purposes this file will be uploaded as unity asset bundle.']
-  name varchar
-  description varchar
-}
-Ref: context_models.project_id > projects.id
-
-Table architecture_models {
-  id integer [pk, increment]
-  project_id integer
-  url varchar [note: 'Download link for the actual geometry file. For our purposes this file will be uploaded as unity asset bundle.']
-  name varchar
-  description varchar
-}
-Ref: architecture_models.project_id > projects.id
-
-Table scenery_models {
-  id integer [pk, increment]
-  project_id integer
-  url varchar [note: 'Download link for the actual geometry file. For our purposes this file will be uploaded as unity asset bundle.']
-  name varchar
-  description varchar
-}
-Ref: scenery_models.project_id > projects.id
-
-Table forms {
-  id integer [pk, increment]
-  project_id integer
-  type form_type
-  name varchar
-  description varchar
-}
-Ref: forms.project_id > projects.id
-
-enum form_type {
-  activity
-  question
-}
-
-Table form_fields {
-  id integer [pk, increment]
-  position integer
-  template jsonb
-  form_id integer
-}
-Ref: form_fields.form_id > forms.id
-
-Table results {
-  id integer [pk, increment]
-  form_id integer
-  form_field_id integer
-  participant_id integer
-  data jsonb
-  last_edited timestamp
-}
-Ref: results.form_id > forms.id
-Ref: results.form_field_id > form_fields.id
-Ref: results.participant_id > participants.id
-
 Table sessions {
   id integer [pk, increment]
-  name varchar
+  name varchar [not null]
   description varchar
   project_id integer
   playlist_id integer
@@ -212,6 +165,136 @@ Table log_categories {
   Note: 'Examples: Progress, Exception, Breaks, Aborts etc.'
 }
 
+
+
+//SURVEY CONTENT
+
+
+//Checkpoints/Information
+Table checkpoints {
+  id integer [pk, increment]
+  project_id integer
+  description varchar
+  created_at timestamp
+  
+  //Revit (CAD) Import
+  RevitElementID integer
+  
+  Location point
+  SpawnDistance vector [Note: 'Entfernung Checkpoint zu Participant']
+  Perimeter double [Note: 'Innerhalb Perimeter Sichtbar']
+  IdentityData_Name varchar  [Default: 'RandomPlaceNames', not null]
+
+  SurveyPoint point
+  BasePoint point
+  ProjectRotation double
+  Family checkpoint_family [Note: 'Der Family-Name, nachdem in Revit gesucht wird, muss in Dynamo überschrieben werden können. Durch Dynamo wird Family zugeordnet.']
+  Type checkpoint_type [Note: 'Der Typen-Name, nachdem in Revit gesucht wird, muss in Dynamo überschrieben werden können. Durch Dynamo wird Type zugeordnet']
+}
+
+enum checkpoint_family{
+  Checkpoint
+}
+enum checkpoint_type{
+  Checkpoint
+  Information
+}
+Ref: checkpoints.project_id > projects.id
+
+
+//Modelle im Projekt
+Table models {
+  id integer [pk, increment]
+  project_id integer
+  type model_type [not null]
+  url varchar [note: 'Download link for the actual geometry file. For our purposes this file will be uploaded as unity asset bundle.']
+  name varchar [not null]
+  size double [note: 'in MB']
+  description varchar
+}
+//Modelltypen, welche in den Scenarien oder in Aufgaben zugeordnet werden können
+enum model_type{
+  context [note: 'Main Model'] 
+  design_option [note: 'Submodel']
+  scenery [note: 'Part Submodel']
+}
+Ref: models.project_id > projects.id
+
+
+Table behaviour{
+  id integer [pk]
+  name varchar [not null]
+  
+  walking boolean
+  teleporting boolean
+  flying boolean
+  movement_speed1 integer [default: 1]
+  movement_speed2 integer [default: 2]
+  
+  walking_distance double [default: 0, Note: 'Unit: meter']
+  walking_time integer [default: 0, Note: 'Unit: sec']
+  walking_perimeter double [default:0, Note: 'Unit: meter. Startpunkt: checkpoints.Location']
+  
+  next integer 
+}
+Ref: behaviour.movement_speed1 > movement_speed.id
+Ref: behaviour.movement_speed2 > movement_speed.id
+Ref: behaviour.next - next_checkpoint.id
+
+Table movement_speed{
+  id integer [pk]
+  name varchar [not null]
+  speed double [Note: 'Abhänging von Gaming Engine']
+}
+
+Table next_checkpoint{
+  id integer [pk]
+  name name_type
+  data jsonb [Note:'behaviour nach "next" in client-UI']
+}
+enum name_type{
+  teleport [Note: 'Zum nächsten Checkpoint teleportieren']
+  walk [Note: 'Zum nächsten Checkpoint laufen.']
+}
+
+
+//Formulare für Interaktion und Abfragen mit dem Participant
+Table forms {
+  id integer [pk, increment]
+  project_id integer
+  type form_type
+  name varchar
+  description varchar
+}
+Ref: forms.project_id > projects.id
+
+enum form_type {
+  activity // ??? Activiy = Bahaviour
+  question // ???
+}
+
+Table form_fields {
+  id integer [pk, increment]
+  position integer
+  template jsonb //Funktion der Aufgabe (Befragung, Wayfinding)
+  form_id integer
+}
+Ref: form_fields.form_id > forms.id
+
+Table results {
+  id integer [pk, increment]
+  form_id integer
+  form_field_id integer
+  participant_id integer
+  data jsonb
+  last_edited timestamp
+}
+Ref: results.form_id > forms.id
+Ref: results.form_field_id > form_fields.id
+Ref: results.participant_id > participants.id
+
+
+
 Table participants {
   id integer [pk, increment]
   code varchar
@@ -220,4 +303,23 @@ Table participants {
 Ref: participants.session_id > sessions.id
 
 
-Ref: "architecture_models"."name" < "models"."url"
+Table evaluation_address_book{
+  id integer [pk]
+  name varchar [not null]
+  email varchar [not null]
+  label varchar
+  note varchar
+}
+
+Table user_evb{
+  user_id integer
+  evb_id integer
+}
+Ref: user_evb.user_id > users.id
+Ref: user_evb.evb_id > evaluation_address_book.id
+
+//form_typen
+//form_elemnts
+//form_movement_condition
+  //walking distance
+  //walking time
