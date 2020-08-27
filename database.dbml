@@ -2,6 +2,8 @@ Project VrevalDB {
   database_type: 'MySql'
 }
 
+// Beziehungen müssen geprüft werden. (many-to-many, many-to-one)
+
 //User auf der Plattform
 Table users {
   id integer [pk, increment]
@@ -24,14 +26,15 @@ Table permissions_project {
   id integer [pk, increment]
   name varchar
 
-  Note: 'Permissions:
+  Note: '''Permissions:
 Erstellen/Ändern/Löschen:
 Project, Modelle, Checkpoints, Overview, Forms, Scenario, Playlist, Sessions, Evaluation, ParticipantInvitation, Results 
 Upload/Download:
-Modelle, Checkpoints, Results'
+Modelle, Checkpoints, Results'''
 }
 
 //Alle Projekte auf der Plattform
+//Project kann von Admin kopiert werden (auswahl, was kopiert werden soll)
 Table projects {
   id integer [pk, increment]
   name varchar [not null]
@@ -47,15 +50,16 @@ Table projects {
 
 //Permission für Global Projektbearbeitung
 Table permission_membership {
-  
-  id integer [pk, increment]
-  name varchar [note: 'Student, Trial, Personal, Plus, Pro, Enterprise']
-  modelsize_max double
+    id integer [pk, increment]
+  types varchar [note: 'Student, Trial, Personal, Plus, Pro, Enterprise']
+  modeluploadsize_max double
   checkpoint_evaluation_max integer
   checkpoint_information_max integer
+  checkpoint_gates_max integer
   patricipant_max integer
+  savelimit_time_max integer [note: 'in days']
 
-  Note: 'Grundgedanke: Zusatzfunktionen/ Zusatzspeicher können für ein Projekt dazu bestellt werden kann. Dadurch ist der User unabhängig vom Projekt.'
+  Note: 'Grundgedanke: Zusatzfunktionen/ Zusatzspeicher können für ein Projekt dazu bestellt werden. Dadurch ist der User unabhängig vom Projekt.'
 }
 Ref: user_project.user_id > users.id
 Ref: user_project.project_id > projects.id
@@ -64,7 +68,7 @@ Ref: projects.membership_id > permission_membership.id
 
 
 
-//HIERARCHIE: Survey Layout (Scenario, Playlist, Session, Evaluation)
+//SURVEY Sequence ODER Chronology: Survey Layout (Scenario, Playlist, Session, Evaluation)
 
 Table playlists {
   id integer [pk, increment]
@@ -96,14 +100,27 @@ Table scenarios {
   name varchar [not null]
   description varchar
   project_id integer
-  model_id integer
+  model_groupes_id integer
+  checkpoints_gate_id integer
   behaviour_id integer
+  execution_id integer
+  position integer
 }
 Ref: scenarios.project_id > projects.id
-Ref: scenarios.model_id > models.id
 Ref: scenarios.behaviour_id > behaviour.id
+Ref: scenarios.checkpoints_gate_id > ch_gate_groups.id
+Ref: scenarios.model_groupes_id > model_groupes.id
+Ref: scenarios.execution_id > execution.id
 
-Table scenarios_checkpoints {
+Table execution{
+  id integer
+  name varchar
+  action jsonb
+  
+  Note: 'Regelt, ob ein Scenario nach einem Abbruch wiederholt werden kann, wenn es bereits gestartet wurde, jedoch über "nächste Aufgabe / Next" nicht beendet wurde'
+}
+
+Table scenarios_checkpoints_evaluation {
   project_id integer
   scenario_id integer
   checkpoint_id integer
@@ -115,38 +132,50 @@ Table scenarios_checkpoints {
 
   Note: 'This is a many-to-many relation that also stores the order in which a checkpoint should be activated by assigning each row a position in an ordered list.'
 }
-Ref: scenarios_checkpoints.project_id > projects.id
-Ref: scenarios_checkpoints.scenario_id > scenarios.id
-Ref: scenarios_checkpoints.checkpoint_id > checkpoints.id
+Ref: scenarios_checkpoints_evaluation.project_id > projects.id
+Ref: scenarios_checkpoints_evaluation.scenario_id > scenarios.id
+Ref: scenarios_checkpoints_evaluation.checkpoint_id > checkpoints.id
 
 Table checkpoints_forms {
   project_id integer
-  checkpoint_id integer
+  scenario_id Interaktion
+  model_groupes_id integer
+  checkpoints_evalaluation_id integer
+  checkpoints_gate_id integer
+  checkpoint_information_id integer
   form_id integer
   position integer [Note: 'Reihenfolge']
   
   Indexes {
-    (project_id, checkpoint_id, form_id) [pk]
+    (project_id, checkpoints_evalaluation_id, form_id) [pk]
   }
 }
 Ref: checkpoints_forms.project_id > projects.id
-Ref: checkpoints_forms.checkpoint_id > checkpoints.id
+Ref: checkpoints_forms.scenario_id > scenarios.id
+Ref: checkpoints_forms.model_groupes_id > model_groupes.id
+Ref: checkpoints_forms.checkpoints_evalaluation_id > checkpoints.id
+Ref: checkpoints_forms.checkpoints_gate_id > ch_gate_groups.id
+Ref: checkpoints_forms.checkpoint_information_id > ch_information_groupes.id
 Ref: checkpoints_forms.form_id > forms.id
 
-Table sessions {
+Table evaluation_groups as EG{
   id integer [pk, increment]
   name varchar [not null]
   description varchar
   project_id integer
   playlist_id integer
 }
-Ref: sessions.project_id > projects.id
-Ref: sessions.playlist_id > playlists.id
+Ref: EG.project_id > projects.id
+Ref: EG.playlist_id > playlists.id
 
+
+// Sessions müssen die Anfang und Endzeiten jedes Checkpionts, Scenarios, Playlist und Evaluationsgruppe speichern. 
+// Ziel ist es, dass eine Statistik aufgestellt werden kann, wie lange und wo Versuchsteilnehmer an einer Aufgabe zeitlich gebraucht haben)
 Table session_logs {
   id integer [pk, increment]
   participant_id integer
   session_id integer
+  eva_group_id integer
   created_at timestamp
   content varchar
   category_id integer
@@ -154,23 +183,40 @@ Table session_logs {
   Note: 'All relevant events will have their own log entry'
 }
 Ref: session_logs.participant_id > participants.id
-Ref: session_logs.session_id > sessions.id
+Ref: session_logs.eva_group_id > EG.id
 Ref: session_logs.category_id > log_categories.id
+
+Table LogsIdea{
+  id integer
+
+  Note: ''' ADDitional for Log:
+  Jeder Klick, welcher eine Auswahl/Aktion auslöst, wird getrackt.
+  Damit können Entscheidungsänderungen nachvollzogen werden.
+        '''
+}
+Ref: LogsIdea.id - session_logs.id
 
 Table log_categories {
   id integer [pk, increment]
   name varchar
   description varchar
   
-  Note: 'Examples: Progress, Exception, Breaks, Aborts etc.'
+  Note: 'Examples: Progress, Exception, Breaks, Aborts, Sickness, Not found, Start, End etc.'
 }
 
+Table evaluations{
+  id integer [pk]
+  name varchar
+  description varchar
+  project_id integer
+}
+Ref: evaluations.project_id > projects.id
 
 
 //SURVEY CONTENT
 
 
-//Checkpoints/Information
+//Checkpoints/Information/Gates
 Table checkpoints {
   id integer [pk, increment]
   project_id integer
@@ -181,25 +227,27 @@ Table checkpoints {
   RevitElementID integer
   
   Location point
-  SpawnDistance vector [Note: 'Entfernung Checkpoint zu Participant']
-  Perimeter double [Note: 'Innerhalb Perimeter Sichtbar']
-  IdentityData_Name varchar  [Default: 'RandomPlaceNames', not null]
+  SpawnDistance vector [Note: 'Entfernung Checkpoint zu Participant'] //Default Value?
+  Perimeter_visible double [Note: 'Innerhalb Perimeter Sichtbar.'] //Default Value?
+  Perimeter_Boundary double [Note: 'BoundaryBox für Teleportation to next Checkpoint for Wayfinding']
+  IdentityData_Name varchar  [Default: 'RandomPlaceNames', not null] //Default Value?
 
-  SurveyPoint point
-  BasePoint point
-  ProjectRotation double
+  SurveyPoint point //Default Value?
+  BasePoint point //Default Value?
+  ProjectRotation double //Default Value?
   Family checkpoint_family [Note: 'Der Family-Name, nachdem in Revit gesucht wird, muss in Dynamo überschrieben werden können. Durch Dynamo wird Family zugeordnet.']
   Type checkpoint_type [Note: 'Der Typen-Name, nachdem in Revit gesucht wird, muss in Dynamo überschrieben werden können. Durch Dynamo wird Type zugeordnet']
 }
-
 enum checkpoint_family{
   Checkpoint
 }
 enum checkpoint_type{
-  Checkpoint
+  Evaluation
   Information
+  Gates
 }
 Ref: checkpoints.project_id > projects.id
+Ref: checkpoints.Type < behaviour.project_id
 
 
 //Modelle im Projekt
@@ -213,33 +261,118 @@ Table models {
   description varchar
 }
 //Modelltypen, welche in den Scenarien oder in Aufgaben zugeordnet werden können
-enum model_type{
-  context [note: 'Main Model'] 
-  design_option [note: 'Submodel']
-  scenery [note: 'Part Submodel']
+enum model_types{
+  ARCH_main_model [note: 'Main Model']
+  ARCH_design_option [note: 'Submodel']
+  ARCH_scenery [note: 'Part Submodel']
 }
 Ref: models.project_id > projects.id
 
+Table model_groupes{
+  id integer
+  project_id integer
+
+  ARCH_main_model_id integer
+  ARCH_design_option_id integer
+  ARCH_scenery_id integer
+
+Note: 'Sobald ein Model ausgewählt wurde, kann dieses in einer anderen Kategorie nicht mehr ausgewählt werden.'
+}
+Ref: model_groupes.project_id > projects.id
+Ref: model_groupes.ARCH_main_model_id > models.id
+Ref: model_groupes.ARCH_design_option_id > models.id
+Ref: model_groupes.ARCH_scenery_id > models.id
+
+Table ch_information_groupes{
+  id integer
+  group_information_id integer
+  project_id integer
+
+  checkpoints_information_id integer
+  
+}
+Ref: ch_information_groupes.project_id > projects.id
+Ref: ch_information_groupes.checkpoints_information_id > checkpoints.id
+Ref: ch_information_groupes.group_information_id > groups_information.id
+
+Table groups_information{
+  id integer
+  name varchar
+  project_id integer
+}
+Ref: groups_information.project_id > projects.id
+
+Table camera_path{
+  id integer
+  name varchar
+  project_id integer
+  
+  list_translation varchar [note: 'Liste von Punkten, welche mit einer Kamera abgefahren werden']
+}
+Ref: camera_path.project_id > projects.id
+
+//muss noch ausgearbeitet werden. wie modellgruppen.
+Table ch_gate_groups{
+  id integer
+  group_gate_id integer
+  project_id integer
+  
+  checkpoint_id varchar [note: 'List of Gates. IdentityData_Name = Gate_name. Position by List Rank']
+
+  Note: 'Filter by Type'
+}
+Ref: ch_gate_groups.id > projects.id
+Ref: ch_gate_groups.group_gate_id > groups_gate.id
+Ref: ch_gate_groups.checkpoint_id > checkpoints.id
+
+Table groups_gate{
+  id integer
+  name varchar
+  project_id integer
+}
+Ref: groups_gate.project_id > projects.id
 
 Table behaviour{
   id integer [pk]
   name varchar [not null]
+  project_id integer
+  
+  voice_record bool [note: 'Für Kommentiertes Verhalten während der Aufgabe. Aufnahme nur, wenn Microfon Sound empfängt, sonst stopp.']
+  voice_start integer
+  
+  answer_time_min integer [default: 0, note: '0 = infinite. min time in sec to finish task. MIN: after time is up, active of next button.']
+  answer_time_max integer [default: 0, note: '0 = infinite. max time in sec to finish task. MAX: after teleport to next checkpoint, if checkpoint is not found or answer time is up']
+  answer_time_start integer
   
   walking boolean
   teleporting boolean
   flying boolean
-  movement_speed1 integer [default: 1]
-  movement_speed2 integer [default: 2]
+  gates_enable boolean [note:'Fahrstuhl, Teleporter-Gates']
+  movement_speed1_id integer [default: 1, Note:'Speed kann in UI umgestellt werden']
+  movement_speed2_id integer [default: 2, Note:'Speed kann in UI umgestellt werden']
+  movement_speed3_id integer [default: 3, Note:'Speed kann in UI umgestellt werden']
   
-  walking_distance double [default: 0, Note: 'Unit: meter']
-  walking_time integer [default: 0, Note: 'Unit: sec']
-  walking_perimeter double [default:0, Note: 'Unit: meter. Startpunkt: checkpoints.Location']
+  walking_distance_max double [default: 0, Note: 'Unit: meter']
+  walking_perimeter_boundary_max double [default:0, Note: 'Unit: meter. Startpunkt: checkpoints.Location + Perimeter Boundary = Max_Perimeter for walking']
   
-  next integer 
+  tracking boolean
+  tracking_start action_start
+  
+  next_behaviour_id integer
+  
+  Note: 'Standart Behaviour jsonb kann der Behaviour Liste hinzugefügt werden, wenn nicht mehr vorhanden. Import/Export der Behaviour über json möglich'
 }
-Ref: behaviour.movement_speed1 > movement_speed.id
-Ref: behaviour.movement_speed2 > movement_speed.id
-Ref: behaviour.next - next_checkpoint.id
+Ref: behaviour.project_id > projects.id
+Ref: behaviour.movement_speed1_id > movement_speed.id
+Ref: behaviour.movement_speed2_id > movement_speed.id
+Ref: behaviour.movement_speed3_id > movement_speed.id
+Ref: behaviour.next_behaviour_id - next_checkpoint.id
+//Link: start time + voice zu action_start
+
+enum action_start{
+  by_arrival_at_checkpoint
+  between_two_checkpoints [note: 'next_behaviour must be walking to next Checkpoint']
+}
 
 Table movement_speed{
   id integer [pk]
@@ -249,77 +382,442 @@ Table movement_speed{
 
 Table next_checkpoint{
   id integer [pk]
-  name name_type
-  data jsonb [Note:'behaviour nach "next" in client-UI']
+  name varchar
+  action action_type [Note:'behaviour nach "next" in client-UI']
 }
-enum name_type{
+enum action_type{
   teleport [Note: 'Zum nächsten Checkpoint teleportieren']
   walk [Note: 'Zum nächsten Checkpoint laufen.']
 }
 
 
-//Formulare für Interaktion und Abfragen mit dem Participant
-Table forms {
-  id integer [pk, increment]
-  project_id integer
-  type form_type
-  name varchar
-  description varchar
-}
-Ref: forms.project_id > projects.id
+//
+//Resultate und Evaluationsgruppen
+//
 
-enum form_type {
-  activity // ??? Activiy = Bahaviour
-  question // ???
-}
 
-Table form_fields {
+Table results_form {
   id integer [pk, increment]
-  position integer
-  template jsonb //Funktion der Aufgabe (Befragung, Wayfinding)
-  form_id integer
-}
-Ref: form_fields.form_id > forms.id
-
-Table results {
-  id integer [pk, increment]
+  type result_type
   form_id integer
   form_field_id integer
+  form_template_id integer
   participant_id integer
   data jsonb
+  
+  start_time timestamp
+  end_time timestamp
+  
   last_edited timestamp
 }
-Ref: results.form_id > forms.id
-Ref: results.form_field_id > form_fields.id
-Ref: results.participant_id > participants.id
-
-
+enum result_type{
+  Test_Evaluation_DATA
+  Evaluation_DATA
+}
+Ref: results_form.form_id > forms.id
+Ref: results_form.form_field_id > form_fields.id
+Ref: results_form.form_template_id > form_templates.id
+Ref: results_form.participant_id > participants.id
 
 Table participants {
   id integer [pk, increment]
   code varchar
   session_id integer
 }
-Ref: participants.session_id > sessions.id
+Ref: participants.session_id > EG.id
 
-
-Table evaluation_address_book{
+Table evaluation_address_book as evb{
   id integer [pk]
   name varchar [not null]
-  email varchar [not null]
+  email varchar [not null, unique]
   label varchar
   note varchar
 }
 
+//Pivot
 Table user_evb{
   user_id integer
   evb_id integer
+  evaluation_id integer
 }
 Ref: user_evb.user_id > users.id
-Ref: user_evb.evb_id > evaluation_address_book.id
+Ref: user_evb.evb_id > evb.id
+Ref: user_evb.evaluation_id > evaluations.id
 
-//form_typen
-//form_elemnts
-//form_movement_condition
-  //walking distance
-  //walking time
+
+//
+//Formulare für Interaktion und Abfragen mit dem Participant
+//
+
+
+Table forms {
+  id integer [pk, increment]
+  name varchar
+  project_id integer
+  type form_type
+
+  description varchar
+  form_field_id integer
+
+  position integer
+  
+  Note: 'Import/Export der erstellten Forms über json möglich'
+}
+enum form_type {
+  checkpoint
+  information
+}
+Ref: forms.project_id > projects.id
+Ref: forms.form_field_id > form_fields.id
+Ref: forms.form_field_id > info_fields.id
+
+//pivot
+Table form_fields {
+  id integer [pk, increment]
+  project_id integer
+  name varchar
+  form_template_id integer
+  behaviour_id integer
+  
+  position integer
+}
+Ref: form_fields.behaviour_id > behaviour.id
+Ref: form_fields.form_template_id > form_templates.id
+Ref: form_fields.project_id > projects.id
+//
+//Abfrage-Typen
+//
+
+Table form_templates{
+  id integer
+  name varchar
+  project_id integer
+  position integer
+  answer_requiered boolean
+  
+  form_types_id integer
+}
+Ref: form_templates.project_id > projects.id
+
+Table text{
+  id integer
+  name varchar
+  project_id integer
+  
+  header varchar
+  text varchar [Note: 'Text kann mit Formatierung gespeichert werden (Fett, Kursiv, Normal)']
+}
+Ref: text.project_id > projects.id
+Ref: text.id > form_templates.form_types_id
+Ref: text.id > info_templates.form_types_id
+
+Table Break{
+  id integer
+  name varchar [default: 'Next']
+  project_id integer [default: 'all projects']
+  
+  Note: 'Im Handheld muss "weiter" ausgewählt werden, um den nächsten Inhalt aufzurufen'
+}
+Ref: Break.project_id > projects.id
+Ref: Break.id > form_templates.form_types_id
+
+Table questionnaire_choice{
+  // Single/MultiChoice
+  id integer
+  project_id integer
+
+  question varchar
+  subquestion varchar
+
+  //Antwortauswahlliste
+  label_id integer
+
+  answer_style_id integer //Auswahl zwischen Zeichen, Num, Bilder, Modellen
+  answer_multiple boolean
+  answer_others varchar [Note: 'Wenn Ausgefühlt, dann auswählbar.']
+  answer_others_id integer
+  
+  //Generell:
+  Note: 'Leerzeichen am Anfang oder am Ende von String werden automatisch gelöscht.'
+}
+Ref: questionnaire_choice.project_id > projects.id
+Ref: questionnaire_choice.id > form_templates.form_types_id
+Ref: questionnaire_choice.answer_style_id > graphic_style.id
+Ref: questionnaire_comment.id < questionnaire_choice.answer_others_id
+Ref: questionnaire_choice.label_id > questionnaire_label.id
+
+Table questionnaire_rating{
+  //Semantic Differential
+  id integer
+  project_id integer
+  
+  question varchar
+  subquestion varchar
+  
+  //Antwortauswahlliste
+  label_id integer
+
+  //Settings
+  scale_size integer [default: 6, note: 'Min.2 Max. 11']
+  scale_style integer
+  scale_start integer [default: 1, note: '-5 < start < 1']
+  scale_label_visible boolean [default: false, Note: 'Über Skala, freezed table header, damit Antworten darunter gescrollt werden können']
+  scale_label_overwrite boolean
+  scale_label_id integer
+  //Generell:
+  Note: 'Leerzeichen am Anfang oder am Ende von String werden automatisch gelöscht.'
+}
+Ref: questionnaire_rating.project_id > projects.id
+Ref: questionnaire_rating.scale_style > graphic_style.id
+Ref: questionnaire_rating.id > form_templates.form_types_id
+Ref: questionnaire_rating.label_id > questionnaire_label.id
+Ref: questionnaire_rating.scale_label_id > questionnaire_scale_label.id
+
+Table questionnaire_likert{
+  //Häufigkeiten
+  id integer
+  project_id integer
+  
+  question varchar
+  subquestion varchar
+  
+  //Antwortauswahlliste
+  label_id integer
+
+  //Settings
+  scale_size integer [default: 6, note: 'Min.2 Max. 11']
+  scale_style_id integer
+  scale_label_id integer
+  //Generell:
+  Note: 'Leerzeichen am Anfang oder am Ende von String werden automatisch gelöscht.'
+}
+Ref: questionnaire_likert.project_id > projects.id
+Ref: questionnaire_likert.scale_style_id > graphic_style.id
+Ref: questionnaire_likert.id > form_templates.form_types_id
+Ref: questionnaire_likert.label_id > questionnaire_label.id
+Ref: questionnaire_likert.scale_label_id > questionnaire_scale_label.id
+
+Table questionnaire_label{
+  id integer
+  project_id integer
+  
+  label_left varchar
+  label_right varchar [Note: 'Option. If set, visible in VR.']
+}
+Ref: questionnaire_label.project_id > projects.id
+
+Table questionnaire_scale_label{
+  id integer
+  project_id integer
+  scale_label varchar  [Note: 'skala_label_visible must be visible. Skala size legt Anzahl für Überschreibungslabels fest. Maximal Zeichen müssen festgelegt werden - Vorschlag 25.' ]
+}
+
+Table questionnaire_comment{
+  id integer
+  project_id integer
+  answer_method_id integer
+}
+Ref: questionnaire_comment.project_id > projects.id
+Ref: questionnaire_text.id < questionnaire_comment.answer_method_id
+Ref: questionnaire_voicerecord.id < questionnaire_comment.answer_method_id
+Ref: form_templates.form_types_id < questionnaire_comment.id
+
+Table questionnaire_text{
+  id integer
+  project_id integer
+  
+  question varchar
+  subquestion varchar
+
+  answer_style_id integer
+  answer_text_length_min integer
+  answer_text_length_max integer
+}
+Ref: questionnaire_text.project_id > projects.id
+Ref: questionnaire_text.id > form_templates.form_types_id
+Ref: questionnaire_text.answer_style_id > answer_style.id
+
+Table questionnaire_voicerecord{
+  id integer
+  project_id integer
+  
+  question varchar
+  subquestion varchar
+  
+  answer_time_min integer
+  answer_time_max integer
+}
+Ref: questionnaire_voicerecord.project_id > projects.id
+Ref: questionnaire_voicerecord.id > form_templates.form_types_id
+
+Table questionnaire_abtest{
+  id integer
+  name varchar
+  project_id integer
+  
+  question varchar
+  subquestion varchar
+  
+  model_groupes_id integer
+}
+Ref: questionnaire_abtest.project_id > projects.id
+Ref: questionnaire_abtest.id > form_templates.form_types_id
+Ref: questionnaire_abtest.model_groupes_id > model_groupes.id
+
+Table questionnaire_camera_path{
+  id integer
+  name varchar
+  project_id integer
+  
+  question varchar
+  subquestion varchar
+  
+  camera_path_id integer [note: 'List of Points - like wayfinding points, without rotation']
+  movement_speed1_id integer
+  
+  Note: 'Erfassung des Empfindens während einer Kamerafahrt. Controller Joystick mit Positiv, Neutral und Negativ Rating versehen (überschreibung der Scrollfunktion) Sichtbarkeit im UI, welche Empfindung gerade aktiv ist.'
+}
+Ref: questionnaire_camera_path.project_id > projects.id
+Ref: questionnaire_camera_path.id > form_templates.form_types_id
+Ref: questionnaire_camera_path.camera_path_id > camera_path.id
+
+Table questionnaire_wayfindung_multidestination{
+  id integer
+  project_id integer
+  name varchar
+  
+  question varchar
+  subquestion varchar
+  
+  checkpoints_evalaluation_id varchar [note: 'Liste von möglichen zu Erreichenden Zielen (checkpoints). Nur ein Checkpoint muss erreicht werden']
+
+  Note: 'Tracking muss im Behaviour aktiviert sein.'
+}
+Ref: questionnaire_wayfindung_multidestination.id > form_templates.form_types_id
+Ref: questionnaire_wayfindung_multidestination.project_id > projects.id
+Ref: questionnaire_wayfindung_multidestination.checkpoints_evalaluation_id > ch_evaluation_groups.id
+
+Table ch_evaluation_groups{
+  id integer
+  groups_evaluation_id integer
+  project_id integer
+
+  checkpoints_evalaluation_id integer
+}
+Ref: ch_evaluation_groups.project_id > projects.id
+Ref: ch_evaluation_groups.checkpoints_evalaluation_id > checkpoints.id
+Ref: ch_evaluation_groups.groups_evaluation_id > groups_evaluation.id
+
+Table groups_evaluation{
+  id integer
+  name varchar
+  project_id integer
+}
+Ref: groups_evaluation.project_id > projects.id
+
+Table questionnaire_annotation{
+  id integer
+  name varchar
+  project_id integer
+  
+  question varchar
+  subquestion varchar
+  
+  annotation_template_id integer
+}
+Ref: questionnaire_annotation.project_id > projects.id
+Ref: questionnaire_annotation.annotation_template_id > annotation_templates.id
+Ref: questionnaire_annotation.id < form_templates.form_types_id
+
+Table annotation_templates{
+  id integer
+  name varchar
+  project_id integer
+  position integer
+  answer_requiered boolean
+  
+  form_types_id integer
+}
+Ref: annotation_templates.project_id > projects.id
+Ref: annotation_templates.form_types_id > text.id
+Ref: annotation_templates.form_types_id > Break.id
+Ref: annotation_templates.form_types_id > questionnaire_likert.id
+Ref: annotation_templates.form_types_id > questionnaire_rating.id
+Ref: annotation_templates.form_types_id > questionnaire_choice.id
+Ref: annotation_templates.form_types_id > questionnaire_comment.id
+
+Table questionnaire_pointing{
+  id integer
+  name varchar
+  project_id integer
+  
+  question varchar
+  subquestion varchar
+  
+  pointing_count integer [note: 'minimum 1, maximum 11']
+}
+Ref: questionnaire_pointing.project_id > projects.id
+Ref: questionnaire_pointing.id < form_templates.form_types_id
+
+Table questionnaire_placing{
+  id integer
+  name varchar
+  project_id integer
+  
+  question varchar
+  subquestion varchar
+  
+  placing_count integer [note: 'minimum 1, maximum 11']
+}
+Ref: questionnaire_placing.project_id > projects.id
+Ref: questionnaire_placing.id < form_templates.form_types_id 
+
+// graphic style for answer UI
+Table graphic_style{
+  id integer
+  style style_type [note: 'box-tick, point, button -> kompatible in VR']
+}
+
+Table answer_style{
+  id integer
+  style answer_style [note: 'Varchar, Double, integer, Date'] 
+}
+
+//
+//VR User Information
+//
+
+Table info_templates{
+  id integer
+  name varchar
+  project_id integer
+  position integer
+
+  form_types_id integer
+}
+Ref: info_templates.project_id > projects.id
+
+Table info_fields{
+  id integer [pk, increment]
+  project_id integer
+  name varchar
+  info_template_id integer
+
+  position integer
+}
+Ref: info_fields.info_template_id > info_templates.id
+Ref: info_fields.project_id > projects.id
+
+
+Table maintenance{
+  id integer
+  name varchar
+  project_id integer
+  
+  Note: 'Wartung der Checkpoint-Typen (Evaluation, Gates, Information) in VR/Desktop (Setzen, Löschen, Ändern)'
+}
+Ref: maintenance.project_id > projects.id
+Ref: maintenance.id < form_templates.form_types_id
+
+//Pivot Check EVB-User + Participant Code + Session + Project
+//Evaluation Online/Offline ... wenn Online, View von Study (Notiz neben Button, dass Studie Online ist), wenn Offline, Edit (Notiz neben Button, dass Studie öffline ist) von Study
