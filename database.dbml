@@ -58,6 +58,7 @@ Table permission_membership {
   checkpoint_gates_max integer
   patricipant_max integer
   savelimit_time_max integer [note: 'in days']
+  history boolean [note: 'kann auf History zurück gegriffen werden und wieoft [täglich in der Nacht, wenn veränderungen stattgefunden haben] wird History erstellt']
 
   Note: 'Grundgedanke: Zusatzfunktionen/ Zusatzspeicher können für ein Projekt dazu bestellt werden. Dadurch ist der User unabhängig vom Projekt.'
 }
@@ -68,13 +69,39 @@ Ref: projects.membership_id > permission_membership.id
 
 
 
+
 //SURVEY Sequence ODER Chronology: Survey Layout (Scenario, Playlist, Session, Evaluation)
+Table evaluations{
+  id integer [pk]
+  name varchar
+  description varchar
+  project_id integer
+}
+Ref: evaluations.project_id > projects.id
+
+Table evaluation_playlist{
+  project_id integer
+  evaluation_id integer
+  playlist_id integer
+  position integer
+
+  Indexes {
+    (project_id, playlist_id, evaluation_id) [pk]
+  }
+
+  Note: 'This is a many-to-many relation that also stores the order in which a scenario should be activated by assigning each row a position in an ordered list.'
+}
+Ref: evaluation_playlist.project_id > projects.id
+Ref: evaluation_playlist.playlist_id > playlists.id
+Ref: evaluation_playlist.evaluation_id > evaluations.id
+
 
 Table playlists {
   id integer [pk, increment]
-  project_id integer
   name varchar [not null]
   description varchar
+  project_id integer
+
 }
 Ref: playlists.project_id > projects.id
 
@@ -120,23 +147,8 @@ Table execution{
   Note: 'Regelt, ob ein Scenario nach einem Abbruch wiederholt werden kann, wenn es bereits gestartet wurde, jedoch über "nächste Aufgabe / Next" nicht beendet wurde'
 }
 
-Table scenarios_checkpoints_evaluation {
-  project_id integer
-  scenario_id integer
-  checkpoint_id integer
-  position integer
-
-  Indexes {
-      (project_id, scenario_id, checkpoint_id) [pk]
-  }
-
-  Note: 'This is a many-to-many relation that also stores the order in which a checkpoint should be activated by assigning each row a position in an ordered list.'
-}
-Ref: scenarios_checkpoints_evaluation.project_id > projects.id
-Ref: scenarios_checkpoints_evaluation.scenario_id > scenarios.id
-Ref: scenarios_checkpoints_evaluation.checkpoint_id > checkpoints.id
-
-Table checkpoints_forms {
+Table checkpoints_evaluation {
+  id integer
   project_id integer
   scenario_id Interaktion
   model_groupes_id integer
@@ -149,31 +161,21 @@ Table checkpoints_forms {
   Indexes {
     (project_id, checkpoints_evalaluation_id, form_id) [pk]
   }
+Note: 'This is a many-to-many relation that also stores the order in which a checkpoint should be activated by assigning each row a position in an ordered list.'
 }
-Ref: checkpoints_forms.project_id > projects.id
-Ref: checkpoints_forms.scenario_id > scenarios.id
-Ref: checkpoints_forms.model_groupes_id > model_groupes.id
-Ref: checkpoints_forms.checkpoints_evalaluation_id > checkpoints.id
-Ref: checkpoints_forms.checkpoints_gate_id > ch_gate_groups.id
-Ref: checkpoints_forms.checkpoint_information_id > ch_information_groupes.id
-Ref: checkpoints_forms.form_id > forms.id
-
-Table evaluation_groups as EG{
-  id integer [pk, increment]
-  name varchar [not null]
-  description varchar
-  project_id integer
-  playlist_id integer
-}
-Ref: EG.project_id > projects.id
-Ref: EG.playlist_id > playlists.id
-
+Ref: checkpoints_evaluation.project_id > projects.id
+Ref: checkpoints_evaluation.scenario_id > scenarios.id
+Ref: checkpoints_evaluation.model_groupes_id > model_groupes.id
+Ref: checkpoints_evaluation.checkpoints_evalaluation_id > checkpoints.id
+Ref: checkpoints_evaluation.checkpoints_gate_id > ch_gate_groups.id
+Ref: checkpoints_evaluation.checkpoint_information_id > ch_information_groupes.id
+Ref: checkpoints_evaluation.form_id > forms.id
 
 // Sessions müssen die Anfang und Endzeiten jedes Checkpionts, Scenarios, Playlist und Evaluationsgruppe speichern. 
 // Ziel ist es, dass eine Statistik aufgestellt werden kann, wie lange und wo Versuchsteilnehmer an einer Aufgabe zeitlich gebraucht haben)
 Table session_logs {
   id integer [pk, increment]
-  participant_id integer
+  evalutation_code_id integer
   session_id integer
   eva_group_id integer
   created_at timestamp
@@ -182,7 +184,7 @@ Table session_logs {
   
   Note: 'All relevant events will have their own log entry'
 }
-Ref: session_logs.participant_id > participants.id
+Ref: session_logs.evalutation_code_id > evaluation_code.id
 Ref: session_logs.eva_group_id > EG.id
 Ref: session_logs.category_id > log_categories.id
 
@@ -204,17 +206,10 @@ Table log_categories {
   Note: 'Examples: Progress, Exception, Breaks, Aborts, Sickness, Not found, Start, End etc.'
 }
 
-Table evaluations{
-  id integer [pk]
-  name varchar
-  description varchar
-  project_id integer
-}
-Ref: evaluations.project_id > projects.id
 
-
+//
 //SURVEY CONTENT
-
+//
 
 //Checkpoints/Information/Gates
 Table checkpoints {
@@ -392,57 +387,163 @@ enum action_type{
 
 
 //
-//Resultate und Evaluationsgruppen
+//Resultate
 //
 
 
 Table results_form {
   id integer [pk, increment]
-  type result_type
+  type_id integer
+  evaluation_code_id integer
+
+  evaluation_group_id integer
+  playlist_id integer
+
+  scenario_id integer
+  scenario_evaluation_id integer
+  
   form_id integer
   form_field_id integer
   form_template_id integer
-  participant_id integer
+  
   data jsonb
   
   start_time timestamp
   end_time timestamp
-  
   last_edited timestamp
+}
+Ref: results_form.type_id > result_types.id
+Ref: results_form.evaluation_code_id > evaluation_code.id
+Ref: results_form.scenario_id > scenarios.id
+Ref: results_form.form_id > forms.id
+Ref: results_form.form_field_id > form_fields.id
+Ref: results_form.form_template_id > form_templates.id
+
+Table results_trajectory{
+  id integer [pk, increment]
+  type_id integer
+  evaluation_code_id integer
+
+  evaluation_group_id integer
+  playlist_id integer
+
+  scenario_id integer
+  scenario_evaluation_id integer
+
+  data jsonb
+  
+  start_time timestamp
+  end_time timestamp
+  last_edited timestamp
+}
+Ref: results_trajectory.type_id > result_types.id
+Ref: results_trajectory.evaluation_code_id > evaluation_code.id
+Ref: results_trajectory.scenario_id > scenarios.id
+
+Table result_types{
+  id integer
+  name result_type
 }
 enum result_type{
   Test_Evaluation_DATA
   Evaluation_DATA
-}
-Ref: results_form.form_id > forms.id
-Ref: results_form.form_field_id > form_fields.id
-Ref: results_form.form_template_id > form_templates.id
-Ref: results_form.participant_id > participants.id
+  }
 
-Table participants {
+//
+//Evaluation - Patricipant - Durchführung
+//
+
+Table evaluation_participation_groups as EG{
   id integer [pk, increment]
-  code varchar
-  session_id integer
+  name varchar [not null]
+  description varchar
+  project_id integer
+  evaluation_id integer
 }
-Ref: participants.session_id > EG.id
+Ref: EG.project_id > projects.id
+Ref: EG.evaluation_id > evaluations.id
+
+Table evaluation_code_progress{
+  id integer
+  code_id integer
+  session_log_id integer
+  progress varchar
+  
+  Note: 'Wie das genau geregelt ist, weiß ich leider nicht. Wann ist ein Code "verbrannt"'
+}
+Ref: evaluation_code_progress.code_id > evaluation_code.id
+Ref: evaluation_code_progress.session_log_id > session_logs.id
+
+Table evaluation_code{
+  id integer
+  code varchar [unique, Note: 'Project_ID+RandomCode - unique durch RandomCode. Filter der Ergebnisse nach evaluations, Playlist, scenarios, Forms, form_fields']
+}
+
+Table participant_code_evagroup{
+  participant_project_id integer [note: 'can be empty']
+  code_id integer
+  evaluation_participation_groups_id integer
+  
+  Note: '''
+  Unique Einordnung von Participant && Code && Evaluation_participation_groups.
+  Wenn ein Code einer Evaluation_participation_groups zugeordnet ist, ist dieser "verbraucht".
+  '''
+}
+Ref: participant_code_evagroup.participant_project_id > participant_project.id
+Ref: participant_code_evagroup.code_id > evaluation_code.id
+Ref: participant_code_evagroup.evaluation_participation_groups_id > evaluation_participation_groups.id
+
+//Möglichkeit, dass Participants von Users zu Participants kopiert werden.
+Table participants {
+  id integer [pk, increment, Note:'nicht zurückführbarer Hash, damit Annonymität für Eva-Gruppen erhalten bleibt.']
+  title varchar [Note: 'Herr / Frau']
+  forename varchar
+  surname varchar
+  email varchar
+  gender_id gender
+  year_birth integer
+//nationality_id integer
+
+Note: '''
+Title, forename, surname um personalisierte Einladungsemails / Texte zu erstellen.
+'''
+}
+enum gender{
+  male
+  female
+}
+//Ref: participants.nationality_id > participant_nationality.id
+
+//Table participant_nationality{
+//  id integer
+//  country varchar
+//}
+
+Table participant_project{
+  id integer
+  project_id integer
+  participant_id integer
+  participant_project_code varchar [note: 'code für email einladung mit link direkt zur durchführung einer evaluation eines projektes']
+}
+Ref: participant_project.project_id > projects.id
+Ref: participant_project.participant_id > participants.id
 
 Table evaluation_address_book as evb{
   id integer [pk]
   name varchar [not null]
-  email varchar [not null, unique]
   label varchar
   note varchar
 }
 
-//Pivot
-Table user_evb{
+//Zuordnung participants Users Adressbuch
+Table user_evaluation_address_book as user_evb{
   user_id integer
   evb_id integer
-  evaluation_id integer
+  participant_id integer
 }
 Ref: user_evb.user_id > users.id
 Ref: user_evb.evb_id > evb.id
-Ref: user_evb.evaluation_id > evaluations.id
+Ref: user_evb.participant_id > participants.id
 
 
 //
@@ -484,6 +585,7 @@ Table form_fields {
 Ref: form_fields.behaviour_id > behaviour.id
 Ref: form_fields.form_template_id > form_templates.id
 Ref: form_fields.project_id > projects.id
+
 //
 //Abfrage-Typen
 //
@@ -819,5 +921,20 @@ Table maintenance{
 Ref: maintenance.project_id > projects.id
 Ref: maintenance.id < form_templates.form_types_id
 
+Table history{
+  id integer
+  project_id integer
+  history jsonb [Note: 'shnapshot of project as jsonb']
+  created_at timestamp
+  
+  Note: '''
+  Snapshot wird generiert, wenn Evaluation von deaktiv auf aktiv geschaltet wird.
+  Wenn Evaluation aktiv, dann Bearbeitung von Projekt inaktiv, 
+  '''
+}
+Ref: history.project_id > projects.id
 //Pivot Check EVB-User + Participant Code + Session + Project
 //Evaluation Online/Offline ... wenn Online, View von Study (Notiz neben Button, dass Studie Online ist), wenn Offline, Edit (Notiz neben Button, dass Studie öffline ist) von Study
+
+
+Ref: "models"."size" < "permission_membership"."history"
