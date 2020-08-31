@@ -33,6 +33,13 @@ Upload/Download:
 Modelle, Checkpoints, Results'''
 }
 
+Table reward_system{
+  id integer
+  user_id integer
+  score integer
+}
+Ref: reward_system.user_id > users.id
+
 //Alle Projekte auf der Plattform
 //Project kann von Admin kopiert werden (auswahl, was kopiert werden soll)
 Table projects {
@@ -67,15 +74,20 @@ Ref: user_project.project_id > projects.id
 Ref: user_project.permission_id > permissions_project.id
 Ref: projects.membership_id > permission_membership.id
 
-
-
-
+//
 //SURVEY Sequence ODER Chronology: Survey Layout (Scenario, Playlist, Session, Evaluation)
+//
+
 Table evaluations{
   id integer [pk]
   name varchar
   description varchar
   project_id integer
+  language_interface language
+}
+enum language{
+  English
+  German
 }
 Ref: evaluations.project_id > projects.id
 
@@ -147,7 +159,7 @@ Table execution{
   Note: 'Regelt, ob ein Scenario nach einem Abbruch wiederholt werden kann, wenn es bereits gestartet wurde, jedoch über "nächste Aufgabe / Next" nicht beendet wurde'
 }
 
-Table checkpoints_evaluation {
+Table checkpoints_form {
   id integer
   project_id integer
   scenario_id Interaktion
@@ -156,6 +168,8 @@ Table checkpoints_evaluation {
   checkpoints_gate_id integer
   checkpoint_information_id integer
   form_id integer
+  form_open_by_arrival bool [Note: 'Form wird automatisch bei Ankunft geöffnet. Anklicken des Checkpoints nicht nötig.']
+  behaviour_id integer
   position integer [Note: 'Reihenfolge']
   
   Indexes {
@@ -163,13 +177,14 @@ Table checkpoints_evaluation {
   }
 Note: 'This is a many-to-many relation that also stores the order in which a checkpoint should be activated by assigning each row a position in an ordered list.'
 }
-Ref: checkpoints_evaluation.project_id > projects.id
-Ref: checkpoints_evaluation.scenario_id > scenarios.id
-Ref: checkpoints_evaluation.model_groupes_id > model_groupes.id
-Ref: checkpoints_evaluation.checkpoints_evalaluation_id > checkpoints.id
-Ref: checkpoints_evaluation.checkpoints_gate_id > ch_gate_groups.id
-Ref: checkpoints_evaluation.checkpoint_information_id > ch_information_groupes.id
-Ref: checkpoints_evaluation.form_id > forms.id
+Ref: checkpoints_form.project_id > projects.id
+Ref: checkpoints_form.scenario_id > scenarios.id
+Ref: checkpoints_form.model_groupes_id > model_groupes.id
+Ref: checkpoints_form.checkpoints_evalaluation_id > checkpoints.id
+Ref: checkpoints_form.checkpoints_gate_id > ch_gate_groups.id
+Ref: checkpoints_form.checkpoint_information_id > ch_information_groupes.id
+Ref: checkpoints_form.form_id > forms.id
+Ref: checkpoints_form.behaviour_id > behaviour.id
 
 // Sessions müssen die Anfang und Endzeiten jedes Checkpionts, Scenarios, Playlist und Evaluationsgruppe speichern. 
 // Ziel ist es, dass eine Statistik aufgestellt werden kann, wie lange und wo Versuchsteilnehmer an einer Aufgabe zeitlich gebraucht haben)
@@ -254,6 +269,8 @@ Table models {
   name varchar [not null]
   size double [note: 'in MB']
   description varchar
+  
+  Note: 'Default Content Space 1: WhiteSpace (Hub)'
 }
 //Modelltypen, welche in den Scenarien oder in Aufgaben zugeordnet werden können
 enum model_types{
@@ -267,9 +284,9 @@ Table model_groupes{
   id integer
   project_id integer
 
-  ARCH_main_model_id integer
-  ARCH_design_option_id integer
-  ARCH_scenery_id integer
+  ARCH_main_model_id integer [default: "WhiteSpace"]
+  ARCH_design_option_id integer [default: "none"]
+  ARCH_scenery_id integer  [default: "none"]
 
 Note: 'Sobald ein Model ausgewählt wurde, kann dieses in einer anderen Kategorie nicht mehr ausgewählt werden.'
 }
@@ -306,6 +323,13 @@ Table camera_path{
 }
 Ref: camera_path.project_id > projects.id
 
+Table vioce_record{
+  id integer
+  project_id integer
+  file varchar
+}
+Ref: vioce_record.project_id > projects.id
+
 //muss noch ausgearbeitet werden. wie modellgruppen.
 Table ch_gate_groups{
   id integer
@@ -333,7 +357,9 @@ Table behaviour{
   project_id integer
   
   voice_record bool [note: 'Für Kommentiertes Verhalten während der Aufgabe. Aufnahme nur, wenn Microfon Sound empfängt, sonst stopp.']
-  voice_start integer
+  voice_record_start integer
+  
+  voice_narrator_start integer [Note: 'Start in ms nach Ankunft am Checkpoint.']
   
   answer_time_min integer [default: 0, note: '0 = infinite. min time in sec to finish task. MIN: after time is up, active of next button.']
   answer_time_max integer [default: 0, note: '0 = infinite. max time in sec to finish task. MAX: after teleport to next checkpoint, if checkpoint is not found or answer time is up']
@@ -487,6 +513,7 @@ Table participant_code_evagroup{
   Note: '''
   Unique Einordnung von Participant && Code && Evaluation_participation_groups.
   Wenn ein Code einer Evaluation_participation_groups zugeordnet ist, ist dieser "verbraucht".
+  Zuordnung durch Participant Information: Gender, Age
   '''
 }
 Ref: participant_code_evagroup.participant_project_id > participant_project.id
@@ -601,17 +628,47 @@ Table form_templates{
 }
 Ref: form_templates.project_id > projects.id
 
+Table questionnaire_content as qc{
+  id integer
+  project_id integer
+  
+  type_id integer
+  content varchar [Note: 'left to right with -Trennung- for multiple used input in UI. Can be Text or Vioce(link to audiofile)']
+}
+Ref: qc.project_id > projects.id
+Ref: qc.type_id > questionnaire_content_type.id
+
+Table questionnaire_content_type{
+  id integer
+  type type_content
+}
+enum type_content{
+  question
+  subquestion
+  header
+  text
+  voice
+  scale_label [Note: 'left to right with -Trennung- for multiple used scales in questionaire: see "questionnaire_content.content"']
+  label [Note: 'left to right with -Trennung- for multiple used labels in questionaire: see "questionnaire_content.content"']
+}
+
+//
+
 Table text{
   id integer
   name varchar
   project_id integer
   
-  header varchar
-  text varchar [Note: 'Text kann mit Formatierung gespeichert werden (Fett, Kursiv, Normal)']
+  header_id integer
+  text_id integer [Note: 'Text kann mit Formatierung gespeichert werden (Fett, Kursiv, Normal)']
+  voice_id integer
 }
 Ref: text.project_id > projects.id
 Ref: text.id > form_templates.form_types_id
 Ref: text.id > info_templates.form_types_id
+Ref: text.header_id > qc.id
+Ref: text.text_id > qc.id
+Ref: text.voice_id > qc.id
 
 Table Break{
   id integer
@@ -628,16 +685,15 @@ Table questionnaire_choice{
   id integer
   project_id integer
 
-  question varchar
-  subquestion varchar
+  question_id integer
+  subquestion_id integer
 
   //Antwortauswahlliste
   label_id integer
 
   answer_style_id integer //Auswahl zwischen Zeichen, Num, Bilder, Modellen
   answer_multiple boolean
-  answer_others varchar [Note: 'Wenn Ausgefühlt, dann auswählbar.']
-  answer_others_id integer
+  answer_others_text_id integer [Note: 'Wenn Ausgefühlt, dann auswählbar.']
   
   //Generell:
   Note: 'Leerzeichen am Anfang oder am Ende von String werden automatisch gelöscht.'
@@ -645,16 +701,18 @@ Table questionnaire_choice{
 Ref: questionnaire_choice.project_id > projects.id
 Ref: questionnaire_choice.id > form_templates.form_types_id
 Ref: questionnaire_choice.answer_style_id > graphic_style.id
-Ref: questionnaire_comment.id < questionnaire_choice.answer_others_id
-Ref: questionnaire_choice.label_id > questionnaire_label.id
+Ref: questionnaire_choice.label_id > qc.id
+Ref: questionnaire_choice.question_id > qc.id
+Ref: questionnaire_choice.subquestion_id > qc.id
+Ref: questionnaire_choice.answer_others_text_id > qc.id
 
 Table questionnaire_rating{
   //Semantic Differential
   id integer
   project_id integer
   
-  question varchar
-  subquestion varchar
+  question_id integer
+  subquestion_id integer
   
   //Antwortauswahlliste
   label_id integer
@@ -670,18 +728,21 @@ Table questionnaire_rating{
   Note: 'Leerzeichen am Anfang oder am Ende von String werden automatisch gelöscht.'
 }
 Ref: questionnaire_rating.project_id > projects.id
-Ref: questionnaire_rating.scale_style > graphic_style.id
 Ref: questionnaire_rating.id > form_templates.form_types_id
-Ref: questionnaire_rating.label_id > questionnaire_label.id
-Ref: questionnaire_rating.scale_label_id > questionnaire_scale_label.id
+Ref: questionnaire_rating.question_id > qc.id
+Ref: questionnaire_rating.subquestion_id > qc.id
+Ref: questionnaire_rating.label_id > qc.id
+Ref: questionnaire_rating.scale_style > graphic_style.id
+Ref: questionnaire_rating.scale_label_id > qc.id
+
 
 Table questionnaire_likert{
   //Häufigkeiten
   id integer
   project_id integer
   
-  question varchar
-  subquestion varchar
+  question_id integer
+  subquestion_id integer
   
   //Antwortauswahlliste
   label_id integer
@@ -696,23 +757,9 @@ Table questionnaire_likert{
 Ref: questionnaire_likert.project_id > projects.id
 Ref: questionnaire_likert.scale_style_id > graphic_style.id
 Ref: questionnaire_likert.id > form_templates.form_types_id
-Ref: questionnaire_likert.label_id > questionnaire_label.id
-Ref: questionnaire_likert.scale_label_id > questionnaire_scale_label.id
+Ref: questionnaire_likert.label_id > qc.id
+Ref: questionnaire_likert.scale_label_id > qc.id
 
-Table questionnaire_label{
-  id integer
-  project_id integer
-  
-  label_left varchar
-  label_right varchar [Note: 'Option. If set, visible in VR.']
-}
-Ref: questionnaire_label.project_id > projects.id
-
-Table questionnaire_scale_label{
-  id integer
-  project_id integer
-  scale_label varchar  [Note: 'skala_label_visible must be visible. Skala size legt Anzahl für Überschreibungslabels fest. Maximal Zeichen müssen festgelegt werden - Vorschlag 25.' ]
-}
 
 Table questionnaire_comment{
   id integer
@@ -728,8 +775,8 @@ Table questionnaire_text{
   id integer
   project_id integer
   
-  question varchar
-  subquestion varchar
+  question_id integer [Note: 'Beispiel: Excel, "First Input: English" -Trennung- "Second Input: German" -Trennung- "Modus: Normal (1), Overwrite First_Language with Second_Language (2) , Overwrite Second_Language with First_Language with English (3)"']
+  subquestion_id integer
 
   answer_style_id integer
   answer_text_length_min integer
@@ -738,41 +785,49 @@ Table questionnaire_text{
 Ref: questionnaire_text.project_id > projects.id
 Ref: questionnaire_text.id > form_templates.form_types_id
 Ref: questionnaire_text.answer_style_id > answer_style.id
+Ref: questionnaire_text.question_id > qc.id
+Ref: questionnaire_text.subquestion_id > qc.id
 
 Table questionnaire_voicerecord{
   id integer
   project_id integer
   
-  question varchar
-  subquestion varchar
+  question_id integer
+  subquestion_id integer
   
   answer_time_min integer
   answer_time_max integer
 }
 Ref: questionnaire_voicerecord.project_id > projects.id
 Ref: questionnaire_voicerecord.id > form_templates.form_types_id
+Ref: questionnaire_voicerecord.question_id > qc.id
+Ref: questionnaire_voicerecord.subquestion_id > qc.id
 
 Table questionnaire_abtest{
   id integer
   name varchar
   project_id integer
   
-  question varchar
-  subquestion varchar
+  question_id integer
+  subquestion_id integer
   
   model_groupes_id integer
 }
 Ref: questionnaire_abtest.project_id > projects.id
 Ref: questionnaire_abtest.id > form_templates.form_types_id
+Ref: questionnaire_abtest.question_id > qc.id
+Ref: questionnaire_abtest.subquestion_id > qc.id
 Ref: questionnaire_abtest.model_groupes_id > model_groupes.id
 
+
+//Für Später
 Table questionnaire_camera_path{
   id integer
   name varchar
   project_id integer
   
-  question varchar
-  subquestion varchar
+  question_id integer
+  subquestion_id integer
   
   camera_path_id integer [note: 'List of Points - like wayfinding points, without rotation']
   movement_speed1_id integer
@@ -781,15 +836,19 @@ Table questionnaire_camera_path{
 }
 Ref: questionnaire_camera_path.project_id > projects.id
 Ref: questionnaire_camera_path.id > form_templates.form_types_id
+
+Ref: questionnaire_camera_path.question_id > qc.id
+Ref: questionnaire_camera_path.subquestion_id > qc.id
 Ref: questionnaire_camera_path.camera_path_id > camera_path.id
+Ref: questionnaire_camera_path.movement_speed1_id > movement_speed.id
 
 Table questionnaire_wayfindung_multidestination{
   id integer
   project_id integer
   name varchar
   
-  question varchar
-  subquestion varchar
+  question_id integer
+  subquestion_id integer
   
   checkpoints_evalaluation_id varchar [note: 'Liste von möglichen zu Erreichenden Zielen (checkpoints). Nur ein Checkpoint muss erreicht werden']
 
@@ -797,6 +856,8 @@ Table questionnaire_wayfindung_multidestination{
 }
 Ref: questionnaire_wayfindung_multidestination.id > form_templates.form_types_id
 Ref: questionnaire_wayfindung_multidestination.project_id > projects.id
+Ref: questionnaire_wayfindung_multidestination.question_id > qc.id
+Ref: questionnaire_wayfindung_multidestination.subquestion_id > qc.id
 Ref: questionnaire_wayfindung_multidestination.checkpoints_evalaluation_id > ch_evaluation_groups.id
 
 Table ch_evaluation_groups{
@@ -822,14 +883,16 @@ Table questionnaire_annotation{
   name varchar
   project_id integer
   
-  question varchar
-  subquestion varchar
+  question_id integer
+  subquestion_id integer
   
   annotation_template_id integer
 }
 Ref: questionnaire_annotation.project_id > projects.id
-Ref: questionnaire_annotation.annotation_template_id > annotation_templates.id
 Ref: questionnaire_annotation.id < form_templates.form_types_id
+Ref: questionnaire_annotation.question_id > qc.id
+Ref: questionnaire_annotation.subquestion_id > qc.id
+Ref: questionnaire_annotation.annotation_template_id > annotation_templates.id
 
 Table annotation_templates{
   id integer
@@ -853,26 +916,30 @@ Table questionnaire_pointing{
   name varchar
   project_id integer
   
-  question varchar
-  subquestion varchar
+  question_id integer
+  subquestion_id integer
   
   pointing_count integer [note: 'minimum 1, maximum 11']
 }
 Ref: questionnaire_pointing.project_id > projects.id
 Ref: questionnaire_pointing.id < form_templates.form_types_id
+Ref: questionnaire_pointing.question_id > qc.id
+Ref: questionnaire_pointing.subquestion_id > qc.id
 
 Table questionnaire_placing{
   id integer
   name varchar
   project_id integer
   
-  question varchar
-  subquestion varchar
+  question_id integer
+  subquestion_id integer
   
   placing_count integer [note: 'minimum 1, maximum 11']
 }
 Ref: questionnaire_placing.project_id > projects.id
-Ref: questionnaire_placing.id < form_templates.form_types_id 
+Ref: questionnaire_placing.id < form_templates.form_types_id
+Ref: questionnaire_placing.question_id > qc.id
+Ref: questionnaire_placing.subquestion_id > qc.id
 
 // graphic style for answer UI
 Table graphic_style{
@@ -929,12 +996,9 @@ Table history{
   
   Note: '''
   Snapshot wird generiert, wenn Evaluation von deaktiv auf aktiv geschaltet wird.
-  Wenn Evaluation aktiv, dann Bearbeitung von Projekt inaktiv, 
+  Wenn Evaluation aktiv, dann Bearbeitung von Projekt inaktiv. 
   '''
 }
 Ref: history.project_id > projects.id
 //Pivot Check EVB-User + Participant Code + Session + Project
-//Evaluation Online/Offline ... wenn Online, View von Study (Notiz neben Button, dass Studie Online ist), wenn Offline, Edit (Notiz neben Button, dass Studie öffline ist) von Study
-
-
-Ref: "models"."size" < "permission_membership"."history"
+//Evaluation Online/Offline ... wenn Online, View von Study (Notiz neben Button, dass Studie Online ist), wenn Offline, Edit (Notiz neben Button, dass Studie öffline ist) von Study)
